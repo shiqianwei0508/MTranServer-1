@@ -24,7 +24,7 @@
 - 平时可以 `git add` 和 `git commit`，但 push 必须等用户确认。
 
 ## 关键项目约定（Docker 部署）
-- OCR 字典（`ppocrv6_tiny_dict.txt`）走包内置源下载到 `$HOME/.cache/ppu-paddle-ocr`，**不受 `MT_MODEL_MIRROR_URL` 控制**。
+- OCR 预设（`V6_SMALL_MODEL`）的模型（.ort）+ 全量字典 `ppocrv6_dict.txt` 走包内置源下载到 `$HOME/.cache/ppu-paddle-ocr`，**不受 `MT_MODEL_MIRROR_URL` 控制**；**缓存命中直接读、不联网**，离线只需预置三件套（`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）。OCR 候选顺序线上线下一致：本地 `models/ocr/` onnx 优先，预设兜底。
 - compose 挂载 `./docker/models/ocr-cache:/home/node/.cache/ppu-paddle-ocr` 做持久化。
 - 绑定挂载卷首次建目录属主为 root，容器内 node(UID 1000) 无写权限 → 部署前需 `chown -R 1000:1000 docker/models/ocr-cache`。
 - 离线迁移三件套：镜像 + `models/` + `docker-compose.yaml`，目标机须 x86_64 + glibc 同架构。

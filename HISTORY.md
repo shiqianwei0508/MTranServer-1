@@ -3,6 +3,11 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.26
+
+- OCR：修正离线模式行为——候选顺序线上线下一致（本地 `models/ocr/` onnx 优先，`V6_SMALL_MODEL` 预设兜底），**离线模式（MT_OFFLINE=true）禁止联网下载**：本地模型缺失且预设缓存不齐全时直接报错并给出预置指引，绝不尝试联网后失败。预设模型/字典走同一缓存目录 `~/.cache/ppu-paddle-ocr`（compose 挂载 `./docker/models/ocr-cache`），缓存命中直接读取、不联网，离线只需预置三件套（`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）或本地模型
+- docs：docker/README.md 与 docs/deploy-linux.md 的离线 OCR 段同步重写（缓存预置命令、目录树、挂载表说明）
+
 ## v5.0.25
 
 - docker：records.json（模型索引清单）持久化与离线部署支持。compose 新增 `MT_CONFIG_DIR=/app/config` + `./docker/config:/app/config` 挂载，records.json 持久化在宿主机，容器重建不重复联网下载；README「离线迁移」章节升级为四件套（镜像 + config + models + compose），补充「获取 records.json」（在线跑一次拷出 / curl 镜像站 `${MT_MODEL_MIRROR_URL}/records.json`）与「切换到离线模式（MT_OFFLINE=true）」操作说明，离线模式前提为 records.json 与模型均已预置

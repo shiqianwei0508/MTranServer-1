@@ -215,21 +215,24 @@ OCR 模型下载脚本见仓库根目录 [`get_ocr_models.sh`](../get_ocr_models
 
 服务启动时会按 `pp-ocrv6-medium` → `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型，找到哪个用哪个。
 
-> **重要——识别字典（字符表）**：模型文件只是其中一半，识别时还需配套的字符字典，缓存在 `~/.cache/ppu-paddle-ocr/`（容器部署即 compose 挂载的 `./docker/models/ocr-cache` 目录）。字典按「本地缓存是否已存在」决定是否联网下载，**离线部署必须提前预置**：
-> - `pp-ocrv6-medium` / 在线 small 预设：使用**全量字典** `ppocrv6_dict.txt`（约 73KB，50+ 语言）
-> - `pp-ocrv6-tiny`：使用**精简字典** `ppocrv6_tiny_dict.txt`（约 26KB）
-> - **两套字典不可混用**：medium 模型误配 tiny 精简字典会导致 CTC 字符索引错乱，识别结果全部乱码（中文识别乱 → 翻译结果自然乱）。若出现图片翻译乱码，优先检查此字典是否配错、缓存中是否存在。
-> - **在线环境首次启动会自动下载**：服务初始化时检测到缓存中无对应字典，会自动联网下载，无需手动处理。
-> - **离线环境需提前预置**：从 `https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/recognition/` 下载对应的 `.txt` 放入缓存目录即可，服务初始化时检测到缓存存在会直接读取、不联网。示例（缓存目录为 `~/.cache/ppu-paddle-ocr/`，服务器/容器需按实际路径调整）：
+> **重要——预设模型与识别字典都走同一缓存**：MTranServer 的 OCR 兜底预设（`V6_SMALL_MODEL`）的模型（`.ort`）与配套**全量字典** `ppocrv6_dict.txt`（约 73KB，50+ 语言）都缓存在 `~/.cache/ppu-paddle-ocr/`（容器部署即 compose 挂载的 `./docker/models/ocr-cache`）。加载时按「本地缓存是否已存在」决定是否联网下载——**缓存命中直接读取、不联网**，离线部署只需提前预置缓存即可：
+> - 候选顺序线上线下一致：本地模型（`models/ocr/` 下的 `pp-ocrv6-*` onnx）优先，`V6_SMALL_MODEL` 预设兜底。**离线模式（`MT_OFFLINE=true`）下不触发联网下载**：本地模型缺失且预设缓存不齐全时直接报错并提示预置，缓存齐全时离线也能正常初始化。
+> - **离线环境需预置以下三个文件**（缓存目录为 `~/.cache/ppu-paddle-ocr/`，服务器/容器需按实际路径调整）：
 >   ```bash
->   # medium / 在线 small 预设：全量字典
->   curl -fsSL -o ~/.cache/ppu-paddle-ocr/ppocrv6_dict.txt \
+>   CACHE=~/.cache/ppu-paddle-ocr
+>   mkdir -p "$CACHE"
+>   # 预设检测/识别模型（.ort）
+>   curl -fsSL -o "$CACHE/PP-OCRv6_small_det.ort" \
+>     https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/detection/ort/PP-OCRv6_small_det.ort
+>   curl -fsSL -o "$CACHE/PP-OCRv6_small_rec.ort" \
+>     https://media.githubusercontent.com/media/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/recognition/ort/PP-OCRv6_small_rec.ort
+>   # 全量字典
+>   curl -fsSL -o "$CACHE/ppocrv6_dict.txt" \
 >     https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/recognition/ppocrv6_dict.txt
->   # tiny：精简字典
->   curl -fsSL -o ~/.cache/ppu-paddle-ocr/ppocrv6_tiny_dict.txt \
->     https://raw.githubusercontent.com/PT-Perkasa-Pilar-Utama/ppu-paddle-ocr-models/main/recognition/ppocrv6_tiny_dict.txt
 >   ```
 >   > 提示：若命令路径写的是 `models/ocr-cache/`（即 compose 挂载的持久化目录），下载完成后容器内会自动映射到 `~/.cache/ppu-paddle-ocr/`。
+> - **本地 onnx 模型的配套字典**（走 `findLocalModel()` 时）：`pp-ocrv6-medium` 使用全量字典 `ppocrv6_dict.txt`，`pp-ocrv6-tiny` 使用精简字典 `ppocrv6_tiny_dict.txt`（约 26KB）。**两套字典不可混用**：medium 模型误配 tiny 精简字典会导致 CTC 字符索引错乱，识别结果全部乱码（中文识别乱 → 翻译结果自然乱）。若出现图片翻译乱码，优先检查此字典是否配错、缓存中是否存在。
+> - **在线环境首次启动会自动下载**：服务初始化时检测到缓存中无对应文件，会自动联网下载，无需手动处理。
 
 ---
 

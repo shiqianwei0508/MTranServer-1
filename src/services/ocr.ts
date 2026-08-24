@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import {
   PaddleOcrService,
@@ -110,13 +111,40 @@ function findLocalModel() {
 }
 
 async function createService(): Promise<ServiceState> {
+  const config = getConfig();
   const local = findLocalModel();
+
+  // 预设（V6_SMALL_MODEL）的模型/字典经 ppu-paddle-ocr 缓存目录加载
+  // （os.homedir()/.cache/ppu-paddle-ocr，容器内即 /home/node/.cache/ppu-paddle-ocr，
+  // compose 挂载 ./docker/models/ocr-cache）：缓存命中直接读取、不联网；
+  // 仅缓存缺失才触发联网下载。缓存文件名与 model-cache.ts 的 fetchAndCacheResource
+  // 完全一致（URL path 的 basename）。
+  const presetCacheDir = path.join(os.homedir(), '.cache', 'ppu-paddle-ocr');
+  // model-cache.ts 用 path.basename(new URL(url).pathname)；本项目预设 URL 均无 query，
+  // path.basename(url) 与之等价。
+  const presetCacheReady = [
+    V6_SMALL_MODEL.detection,
+    V6_SMALL_MODEL.recognition,
+    V6_SMALL_MODEL.charactersDictionary,
+  ].every(url => fs.existsSync(path.join(presetCacheDir, path.basename(url))));
+
+  // 候选顺序线上线下一致：本地模型（modelDir/ocr/ 下的 onnx）优先，V6_SMALL_MODEL 预设兜底。
+  // 离线模式（MT_OFFLINE=true）禁止联网：本地模型缺失且预设缓存不齐全时直接报错指引，
+  // 绝不尝试联网下载；缓存齐全时预设仍可从缓存正常初始化。
+  if (config.enableOfflineMode && !local && !presetCacheReady) {
+    throw new Error(
+      `OCR is unavailable in offline mode: no local OCR model under "${path.join(config.modelDir, 'ocr')}" ` +
+        `and the V6_SMALL_MODEL preset cache is incomplete ("${presetCacheDir}": need ` +
+        'PP-OCRv6_small_det.ort, PP-OCRv6_small_rec.ort, ppocrv6_dict.txt). Pre-seed the cache ' +
+        'or local models before enabling offline mode.'
+    );
+  }
+
   const candidates = [
     local,
-    {
-      name: 'pp-ocrv6-small-preset',
-      model: V6_SMALL_MODEL,
-    },
+    ...(config.enableOfflineMode && !presetCacheReady
+      ? []
+      : [{ name: 'pp-ocrv6-small-preset', model: V6_SMALL_MODEL }]),
   ].filter(Boolean) as Array<{ name: string; model: any }>;
 
   let lastError: unknown = null;
@@ -158,6 +186,15 @@ async function createService(): Promise<ServiceState> {
     }
   }
 
+  // 离线模式下初始化失败（如缓存文件损坏），把底层错误包装为可操作的指引，
+  // 而不是只抛难排查的原始错误（如 "Failed to fetch ..."）。
+  if (lastError instanceof Error && config.enableOfflineMode) {
+    throw new Error(
+      `${lastError.message} (offline) OCR unavailable: pre-seed the ppu-paddle-ocr preset cache ` +
+        `("${presetCacheDir}": PP-OCRv6_small_det.ort, PP-OCRv6_small_rec.ort, ppocrv6_dict.txt) ` +
+        `or local models under "${path.join(config.modelDir, 'ocr')}" before enabling offline mode.`
+    );
+  }
   throw lastError instanceof Error ? lastError : new Error('Failed to initialize OCR service');
 }
 

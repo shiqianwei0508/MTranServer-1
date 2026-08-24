@@ -151,7 +151,7 @@ docker compose -f docker/docker-compose.yaml logs -f
 | 挂载 | 容器内路径 | 作用 |
 |------|-----------|------|
 | `./docker/models` | `/app/models` | 翻译模型持久化，避免容器重建后重新下载 |
-| `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 字典缓存持久化。`ppu-paddle-ocr` 的字典走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载。字典落盘后即为 `ocr-cache/ppocrv6_tiny_dict.txt`，已包含在 `models/` 内，可随 `models/` 一起打包迁移 |
+| `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 预设模型/字典缓存持久化。`ppu-paddle-ocr` 的 `V6_SMALL_MODEL` 预设（det/rec 模型 `.ort` + 全量字典 `ppocrv6_dict.txt`）走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载；**缓存命中不联网**，离线部署只需把 `PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt` 预置到此目录即可。在线跑过 OCR 后该目录已自包含，可随 `models/` 一起打包迁移 |
 | `./docker/config` | `/app/config` | 配置数据持久化（`records.json` 模型索引清单等）。在线模式避免每次启动联网下载；离线模式（`MT_OFFLINE=true`）必须在此预置 `records.json` |
 
 > 若需持久化其他数据（配置、日志等），可参照程序数据目录另行挂载。**不要删除 `./docker/models` 挂载**，否则每次重建容器都会重新下载模型。`./docker/config` 挂载目录若由 compose 自动创建，属主为宿主机 root，在线模式（需写入 records.json）需 `chown -R 1000:1000 docker/config`。
@@ -217,13 +217,12 @@ mtranserver/                         # 任意目录名均可
 │   └── records.json                 # 模型索引清单（首次在线启动后落盘于此，或手动拉取）
 └── models/                          # 模型持久化目录（含 OCR 模型与字典，已自包含）
     ├── be_en/ de_en/ en_zh-Hans/ …  # 各语言对翻译模型（bergamot .bin/.spm）
-    ├── ocr/
-    │   └── pp-ocrv6-tiny/           # OCR onnx 模型（det/rec/cls），由 findLocalModel() 本地加载
-    │       ├── PP-OCRv6/det/PP-OCRv6_det_tiny.onnx
-    │       ├── PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx
-    │       └── shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
-    └── ocr-cache/
-        └── ppocrv6_tiny_dict.txt    # OCR 字典（首次下载后落盘，已随 models/ 打包）
+    ├── ocr/                          # 本地 OCR onnx 模型（可选，有则优先；findLocalModel() 加载）
+    │   └── pp-ocrv6-tiny/            # 如 PP-OCRv6/det/PP-OCRv6_det_tiny.onnx、PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx 等
+    └── ocr-cache/                    # V6_SMALL_MODEL 预设缓存（= 容器内 ~/.cache/ppu-paddle-ocr）
+        ├── PP-OCRv6_small_det.ort    # 预设检测模型（首次使用后落盘，随 models/ 打包）
+        ├── PP-OCRv6_small_rec.ort    # 预设识别模型
+        └── ppocrv6_dict.txt          # 全量识别字典（50+ 语言）
 ```
 
 > 实际目录示例（Kylin V11 部署）：`models/` 下含 14 个翻译语言对目录 + `ocr/`（onnx）+ `ocr-cache/`（字典），共约 50 个文件，完整自包含。
@@ -292,13 +291,15 @@ docker compose -f docker-compose.yaml up -d
 2. `models/` 已包含需要用到的所有语言对模型 + `ocr/` + `ocr-cache/`
 3. 确认无误后设 `MT_OFFLINE=true`（compose 的 `environment` 或启动命令前加环境变量）
 
+> **OCR 图片翻译的离线预置**：OCR 候选顺序**线上线下一致**——本地模型（`models/ocr/` 下的 `pp-ocrv6-*` onnx）优先，`V6_SMALL_MODEL` 预设兜底。预设的模型/字典经 `~/.cache/ppu-paddle-ocr`（即 `models/ocr-cache/`）加载，**缓存命中直接读取、不联网**。离线模式（`MT_OFFLINE=true`）下**绝不触发联网下载**：本地模型缺失且预设缓存不齐全时，OCR 初始化直接报错并给出预置指引（不会尝试联网后失败）。因此离线部署只需满足其一：① 把预设三件套（`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）预置到 `models/ocr-cache/`；② 在 `models/ocr/` 预置本地模型。二者满足其一即可（本地模型优先）。
+
 > 在线模式（`MT_OFFLINE=false`，默认）下已有模型哈希校验：本地模型文件存在且 SHA-256 匹配就跳过下载、直接复用——不会重复下载模型；只有缺失或哈希不符才联网拉取。所以日常**并不需要**开离线模式，它主要服务于"部署到彻底断网的内网机"。
 
 ### 前提与限制
 
 - **CPU 架构一致**：镜像内 sharp / onnxruntime 为 `x86_64` 原生二进制，目标机须为同架构（arm64 需另构建）。
 - **glibc 运行环境**：镜像基于 `node:22-slim`（glibc），不能用 musl/alpine 系宿主机内核不兼容场景（一般 x86_64 Linux 均满足）。
-- **模型已齐全**：`models/ocr/pp-ocrv6-tiny` 与 `models/ocr-cache/*.txt` 必须随包带走，否则容器启动后仍会尝试联网下载。
+- **OCR 缓存已齐全**：`models/ocr-cache/`（预置 `V6_SMALL_MODEL` 预设三件套：`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）必须随包带走，否则离线/无网时 OCR 初始化会因缓存缺失而尝试联网下载失败；`models/ocr/` 本地模型为可选项（有则优先）。
 - **离线模式需 records.json**：`MT_OFFLINE=true` 时必须预置 `config/records.json`；在线模式则每次启动联网拉最新清单（很小）。
 - 若目标机已有镜像仓库访问能力，可只传 `models/` + `config/` + `docker-compose.yaml`，镜像从仓库 `pull` 即可。
 
