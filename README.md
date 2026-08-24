@@ -150,10 +150,6 @@ TODO: 火热开发中
 
 请参考 [API.md](API.md) 文件和启动后的 API 文档。
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=xxnuo/MTranServer&type=Timeline)](https://www.star-history.com/#xxnuo/MTranServer&Timeline)
-
 ## Thanks
 
 特别感谢以下项目与作者：

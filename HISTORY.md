@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.15
+
+- 移除 README 的 Star History 章节
+
 ## v5.0.14
 
 - README 使用说明改为仅支持 Linux 与 Docker 部署，移除桌面端及 npx/npm 服务端小节，链接 docs/deploy-kylin.md 与 docker/README.md
