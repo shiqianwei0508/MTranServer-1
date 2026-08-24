@@ -34,10 +34,18 @@ fi
 # 构建日志默认用 --progress=plain，完整输出每个 RUN 层（含 bun install）的
 # stdout/stderr，避免 BuildKit 默认 tty 进度格式把中间日志折叠吞掉。
 # 需要恢复默认树状进度时设置 DOCKER_BUILD_PROGRESS=auto。
+# legacy builder（未安装 buildx / 未启用 BuildKit 的旧 Docker）不支持 --progress，
+# 自动检测并降级跳过该参数——其默认输出本就会完整打印 RUN 层日志，不影响查看。
 PROGRESS="${DOCKER_BUILD_PROGRESS:-plain}"
 
-echo "==> Building MTranServer image: ${TAG} (--progress=${PROGRESS})"
-docker build --progress="${PROGRESS}" -f docker/Dockerfile -t "${TAG}" "${BUILD_ARGS[@]}" .
+if docker build --help 2>&1 | grep -q -- "--progress"; then
+  BUILD_ARGS+=(--progress "${PROGRESS}")
+  echo "==> Building MTranServer image: ${TAG} (--progress=${PROGRESS})"
+else
+  echo "==> Building MTranServer image: ${TAG} (legacy builder，无 --progress，自动降级)"
+fi
+
+docker build -f docker/Dockerfile -t "${TAG}" "${BUILD_ARGS[@]}" .
 
 echo "==> Build complete."
 echo "    启动: docker compose -f docker/docker-compose.yaml up -d"

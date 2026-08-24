@@ -70,6 +70,8 @@ DOCKER_BUILD_PROXY=http://127.0.0.1:7890 ./docker/build.sh
 DOCKER_BUILD_PROGRESS=auto ./docker/build.sh
 ```
 
+> 兼容性：legacy builder（未安装 buildx / 未启用 BuildKit 的旧 Docker）不支持 `--progress` 参数，脚本会自动检测并降级跳过（其默认输出本就会完整打印 RUN 层日志，不影响查看 `bun install` 过程）。
+
 ### 推送到 Harbor
 
 ```bash
