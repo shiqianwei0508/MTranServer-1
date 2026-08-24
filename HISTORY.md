@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.17
+
+- docs(deploy-linux): 恢复 pp-ocrv5-mobile 高精度备选模型段，补充 v5 模型下载方式（一键脚本 + 官方 HuggingFace/ModelScope 源链接）
+
 ## v5.0.16
 
 - docs(deploy-linux): 删除未使用且无下载说明的 pp-ocrv5-mobile 备选模型段，目录结构仅保留默认使用的 pp-ocrv6-tiny

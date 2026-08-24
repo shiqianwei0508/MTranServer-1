@@ -172,34 +172,59 @@ node dist/main.js --download en-zh zh-en
 
 OCR 图片翻译功能依赖 PaddleOCR 模型，**不会自动下载**，需手动放到模型目录的 `ocr/` 子目录下。
 
-目录结构（`modelDir/ocr/`），当前默认使用 `pp-ocrv6-tiny`：
+目录结构（`modelDir/ocr/`），服务启动按 `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型：
 
 ```
 models/ocr/
-└── pp-ocrv6-tiny/              # 推荐，体积小（约 7MB）
-    ├── PP-OCRv6/
-    │   ├── det/PP-OCRv6_det_tiny.onnx
-    │   └── rec/PP-OCRv6_rec_tiny.onnx
+├── pp-ocrv6-tiny/              # 默认使用，体积小（约 7MB）
+│   ├── PP-OCRv6/
+│   │   ├── det/PP-OCRv6_det_tiny.onnx
+│   │   └── rec/PP-OCRv6_rec_tiny.onnx
+│   └── shared/
+│       └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
+└── pp-ocrv5-mobile/            # 高精度备选（约 22MB），不配置则自动回退跳过
+    ├── PP-OCRv5/
+    │   ├── det/ch_PP-OCRv5_det_mobile.onnx
+    │   └── rec/ch_PP-OCRv5_rec_mobile.onnx
     └── shared/
         └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
 ```
 
-一键下载脚本（从镜像站拉取）：
+一键下载脚本（从镜像站拉取 `pp-ocrv6-tiny`，可选追加 `pp-ocrv5-mobile`）：
 
 ```bash
 #!/bin/bash
 MIRROR="http://183.136.206.212:8787"
 OCR_DIR="/opt/mtranserver/models/ocr"
+
+# ---- pp-ocrv6-tiny（默认）----
 mkdir -p "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/det" \
          "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/rec" \
          "$OCR_DIR/pp-ocrv6-tiny/shared/cls"
-
-wget -c "$MIRROR/ocr/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx" -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"
-wget -c "$MIRROR/ocr/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx" -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"
+wget -c "$MIRROR/ocr/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"        -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"
+wget -c "$MIRROR/ocr/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"        -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"
 wget -c "$MIRROR/ocr/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx" -O "$OCR_DIR/pp-ocrv6-tiny/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx"
+
+# ---- pp-ocrv5-mobile（高精度备选，可选）----
+# 若私有镜像站 $MIRROR/ocr/PP-OCRv5/... 未同步，可从官方源获取：
+#   HuggingFace: https://huggingface.co/PaddlePaddle/PP-OCRv5 （collection）
+#   ModelScope : https://www.modelscope.cn/models/PaddlePaddle 下搜索 PP-OCRv5
+# 下载 ch_PP-OCRv5_det_mobile.onnx / ch_PP-OCRv5_rec_mobile.onnx 放到下方目录即可。
+mkdir -p "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/det" \
+         "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/rec" \
+         "$OCR_DIR/pp-ocrv5-mobile/shared/cls"
+wget -c "$MIRROR/ocr/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx"   -O "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx"
+wget -c "$MIRROR/ocr/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx"   -O "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx"
+wget -c "$MIRROR/ocr/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx" -O "$OCR_DIR/pp-ocrv5-mobile/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx"
 
 echo "OCR 模型下载完成"
 ```
+
+> 官方模型源（当私有镜像站缺模型时从此获取）：
+> - PP-OCRv5 官方仓库：[HuggingFace PaddlePaddle/PP-OCRv5](https://huggingface.co/PaddlePaddle/PP-OCRv5) / [PaddleOCR GitHub](https://github.com/PaddlePaddle/PaddleOCR)
+> - PP-OCRv6 官方仓库：[HuggingFace PaddlePaddle/PP-OCRv6_tiny_det_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_onnx) / [ModelScope PP-OCRv6_tiny_rec_onnx](https://www.modelscope.cn/models/PaddlePaddle/PP-OCRv6_tiny_rec_onnx)
+>
+> 下载后按上面的目录结构放置（det / rec 子目录名称与代码加载路径严格对应），服务启动会自动识别。
 
 服务启动时会按 `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型，找到哪个用哪个。
 
