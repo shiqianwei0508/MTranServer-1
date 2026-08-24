@@ -8,20 +8,17 @@ ENV VERSION=${VERSION}
 ENV BUN_CONFIG_REGISTRY=https://registry.npmmirror.com
 
 COPY package.json bun.lock ./
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY ui/package.json ui/bun.lock ./ui/
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    cd ui && bun install --frozen-lockfile
+RUN cd ui && bun install --frozen-lockfile
 
 COPY . .
 
 RUN if [ -z "$VERSION" ]; then VERSION=$(bun -p "require('./package.json').version"); fi; \
     bun run bump "$VERSION"
 
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun run build:node
+RUN bun run build:node
 
 FROM harbor.gbim.vip/dockerio/node:22-slim
 
