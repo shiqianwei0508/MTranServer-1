@@ -30,3 +30,9 @@
 - 离线迁移三件套：镜像 + `models/` + `docker-compose.yaml`，目标机须 x86_64 + glibc 同架构。
 - 镜像体积优化用 `bun prune --production`（非 `bun install --production`，后者不删已装 dev 依赖）。
 - `docker/package.json` 的 version 固定 `1.0.0`，**不随根版本号 bump**（bun.lock 的 root 条目不记录 version，固定不影响 `--frozen-lockfile`；反之每次 bump 该文件会导致 Docker COPY 层缓存失效、`RUN bun install` 每次重跑）。.gitattributes 已将 docker/** 与 *.sh 固定 LF 防 CRLF 波动。
+
+## 经验教训：offline 模式设计原则（2026-08-24，v5.0.26）
+- **离线模式（任何 enableOfflineMode 开关）绝不改变候选/调用顺序**——保持线上线下同一顺序，只在 offline 下加"禁止联网"的前置校验（fail-fast 报错指引）。
+- 改第三方包行为前必须先读其源码确认机制（尤其下载/缓存逻辑），不能凭猜；本次 `ppu-paddle-ocr` 缓存命中不联网、文件名 = `path.basename(url)` 全靠读 `model-cache.ts` 确认。
+- 文档是行为契约，代码行为变化后必须同步核对所有相关文档段落。
+- 完整教训与场景矩阵见 `docs/lessons/offline-ocr.md`（新增的 lessons 目录，与 plans/ 并列）。
