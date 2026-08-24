@@ -12,8 +12,9 @@
 docker/
 ├── Dockerfile              # 多阶段构建：bun 构建 -> node:22-slim 运行
 ├── build.sh                # 镜像构建脚本（默认 tag: harbor.gbim.vip/freedo/mtranserver:latest）
-├── docker-compose.yaml     # 部署编排（含模型持久化卷）
+├── docker-compose.yaml     # 部署编排（含模型/配置持久化卷）
 ├── models/                 # 模型持久化挂载点（.gitkeep 占位，运行时自动下载）
+├── config/                 # 配置数据持久化挂载点（.gitkeep 占位，records.json 等）
 └── README.md               # 本文件
 ```
 
@@ -98,6 +99,7 @@ docker compose -f docker/docker-compose.yaml up -d
 ```
 
 - 模型目录 `./docker/models` 会挂载到容器 `/app/models`，**持久化在宿主机**，容器重建后模型不丢失。
+- 配置目录 `./docker/config` 会挂载到容器 `/app/config`，持久化 `records.json` 等配置数据，容器重建后不重复联网下载。
 - 服务默认模型目录即为 `/app/models`，无需额外设置。
 - 访问地址：`http://服务器IP:8989/ui/`、`http://服务器IP:8989/docs/`。
 
@@ -119,8 +121,9 @@ docker compose -f docker/docker-compose.yaml logs -f
 | `MT_HOST` | 监听地址 | `0.0.0.0` |
 | `MT_PORT` | 监听端口 | `8989` |
 | `MT_MODEL_DIR` | 模型目录 | `/app/models` |
+| `MT_CONFIG_DIR` | 配置数据目录（records.json 模型索引清单等） | `/app/config` |
 | `MT_LOG_LEVEL` | 日志级别 | `info` |
-| `MT_OFFLINE` | 是否离线模式 | `false` |
+| `MT_OFFLINE` | 是否离线模式（`true` 时完全不联网，需预置 `records.json` 与模型，见"十一、离线迁移"） | `false` |
 | `MT_ENABLE_UI` | 是否启用 Web UI | `true` |
 | `MT_MODEL_DOWNLOAD_SOURCE` | 模型下载源 | `mirror` |
 | `MT_MODEL_MIRROR_URL` | 模型镜像地址 | `http://183.136.206.212:8787` |
@@ -149,8 +152,9 @@ docker compose -f docker/docker-compose.yaml logs -f
 |------|-----------|------|
 | `./docker/models` | `/app/models` | 翻译模型持久化，避免容器重建后重新下载 |
 | `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 字典缓存持久化。`ppu-paddle-ocr` 的字典走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载。字典落盘后即为 `ocr-cache/ppocrv6_tiny_dict.txt`，已包含在 `models/` 内，可随 `models/` 一起打包迁移 |
+| `./docker/config` | `/app/config` | 配置数据持久化（`records.json` 模型索引清单等）。在线模式避免每次启动联网下载；离线模式（`MT_OFFLINE=true`）必须在此预置 `records.json` |
 
-> 若需持久化其他数据（配置、日志等），可参照程序数据目录另行挂载。**不要删除 `./docker/models` 挂载**，否则每次重建容器都会重新下载模型。
+> 若需持久化其他数据（配置、日志等），可参照程序数据目录另行挂载。**不要删除 `./docker/models` 挂载**，否则每次重建容器都会重新下载模型。`./docker/config` 挂载目录若由 compose 自动创建，属主为宿主机 root，在线模式（需写入 records.json）需 `chown -R 1000:1000 docker/config`。
 
 ---
 
@@ -179,6 +183,8 @@ curl http://localhost:8989/api/translate \
 |------|------|
 | 容器启动后端口不通 | `docker ps` 确认状态；`docker logs mtranserver` 看启动日志；`ss -tlnp \| grep 8989` 查宿主机端口 |
 | 模型重复下载 | 确认 `./docker/models` 挂载存在且未被误删；`docker inspect mtranserver` 查 Mounts |
+| 启动每次联网下载 records.json | 正常现象：清单仅几 KB，在线模式每次拉最新版以获取最新模型哈希。若不想联网，见"离线模式"章节 |
+| `MT_OFFLINE=true` 启动失败（找不到 records.json） | 离线模式**不会**联网下载清单，需先在 `./docker/config/records.json` 预置；确认 `MT_CONFIG_DIR` 与 compose 挂载一致 |
 | 首次翻译慢 / 超时 | 首次会下载对应语言对模型，属正常；确认 `MT_MODEL_MIRROR_URL` 可达 |
 | 镜像构建失败（native 模块） | 确保用 `node:22-slim`（glibc）而非 alpine；`--node` 模式会保留 `node_modules` 外部引用 |
 | 挂载目录无写入权限 | 宿主机 `./docker/models` 及其子目录属主应为 UID 1000（与容器内 node 用户对齐），否则 `chown -R 1000:1000 docker/models` |
@@ -200,13 +206,15 @@ curl http://localhost:8989/api/translate \
 
 ## 十一、离线迁移（完全离线部署）
 
-镜像、模型、编排三件套齐全后，可**整体迁移到任意支持 Docker 且 CPU 架构一致（x86_64 / glibc）的服务器**，目标机无需联网、无需访问任何模型下载源。
+镜像、模型、配置、编排四件套齐全后，可**整体迁移到任意支持 Docker 且 CPU 架构一致（x86_64 / glibc）的服务器**，目标机无需联网、无需访问任何模型下载源。
 
 ### 迁移包含的内容
 
 ```
 mtranserver/                         # 任意目录名均可
 ├── docker-compose.yaml              # 编排（来自本目录）
+├── config/                          # 配置数据（records.json 模型索引清单等）
+│   └── records.json                 # 模型索引清单（首次在线启动后落盘于此，或手动拉取）
 └── models/                          # 模型持久化目录（含 OCR 模型与字典，已自包含）
     ├── be_en/ de_en/ en_zh-Hans/ …  # 各语言对翻译模型（bergamot .bin/.spm）
     ├── ocr/
@@ -220,19 +228,36 @@ mtranserver/                         # 任意目录名均可
 
 > 实际目录示例（Kylin V11 部署）：`models/` 下含 14 个翻译语言对目录 + `ocr/`（onnx）+ `ocr-cache/`（字典），共约 50 个文件，完整自包含。
 
+> **`records.json` 是什么**：Firefox Translations 的模型索引清单（几 KB），罗列所有语言对模型的版本与 SHA-256 哈希，程序用它选模型、下载后校验。它不是模型数据，模型文件的大头在 `models/`。在线模式每次启动会联网拉最新清单（很小、几乎瞬间）；离线模式（`MT_OFFLINE=true`）则直接读 `config/records.json`，**不会联网**。
+
 ### 导出（源机）
 
 ```bash
 # 1) 保存镜像（目标机无法访问 harbor 时）
 docker save harbor.gbim.vip/freedo/mtranserver:latest -o mtranserver-image.tar
 
-# 2) 打包编排与模型目录（模型目录可能较大，按实际体积选择传输方式）
+# 2) 打包编排、配置与模型目录（模型目录可能较大，按实际体积选择传输方式）
+#    源机 config/ 内应有 records.json：容器在线跑过一次即有（宿主机 docker/config/records.json）；
+#    若尚无，可先手动拉取一份，见下文「获取 records.json」。
 cp docker/docker-compose.yaml ./mtranserver-bundle/
+cp -r docker/config ./mtranserver-bundle/config
 cp -r docker/models ./mtranserver-bundle/models
 tar czf mtranserver-bundle.tar.gz mtranserver-bundle/
 ```
 
-最终迁移介质：`mtranserver-image.tar` + `mtranserver-bundle.tar.gz`（内含 `docker-compose.yaml` 与 `models/`）。
+最终迁移介质：`mtranserver-image.tar` + `mtranserver-bundle.tar.gz`（内含 `docker-compose.yaml`、`config/` 与 `models/`）。
+
+### 获取 records.json（可选，若源机 config/ 为空）
+
+```bash
+# 方式一：联网机器上先在线跑一次容器，落盘后拷出
+docker compose -f docker/docker-compose.yaml up -d   # 等日志出现 "Downloading latest records.json"
+cp docker/config/records.json ./mtranserver-bundle/config/records.json
+
+# 方式二：直接从模型镜像站拉取（与 compose 中 MT_MODEL_MIRROR_URL 同源）
+curl -fsSL -o ./mtranserver-bundle/config/records.json \
+  "${MT_MODEL_MIRROR_URL:-http://183.136.206.212:8787}/records.json"
+```
 
 ### 导入与启动（目标机）
 
@@ -247,17 +272,33 @@ cd mtranserver-bundle
 # 3) 修正挂载目录属主（关键！）
 #    compose 首次 up 会自动建 ./models/ocr-cache 且属主为 root，容器内 node(UID 1000) 无写权限。
 #    事先手动建好并改属主，避免 OCR 字典写入失败。
-mkdir -p models/ocr-cache
-chown -R 1000:1000 models
+#    config/ 同理：离线模式只读 records.json，但目录需 node 可读；若后续切回在线模式需可写。
+mkdir -p models/ocr-cache config
+chown -R 1000:1000 models config
 
-# 4) 启动
+# 4) 如需完全离线（永不联网），设置环境变量后启动：
+#    编辑 docker-compose.yaml：MT_OFFLINE=true，再执行下行；或
+#    MT_OFFLINE=true docker compose -f docker-compose.yaml up -d
 docker compose -f docker-compose.yaml up -d
 ```
+
+### 切换到离线模式（MT_OFFLINE=true）
+
+`MT_OFFLINE=true` 时程序**完全禁止联网**：启动读本地 `config/records.json`（缺失则报错退出），翻译时直接加载本地模型文件（缺失则加载失败，**不会去远程拉取**），`--download`/`--languages`/刷新清单等联网命令被禁用。
+
+因此启用前提是**四件套已齐全**：
+
+1. `config/records.json` 已预置（见上文「获取 records.json」）
+2. `models/` 已包含需要用到的所有语言对模型 + `ocr/` + `ocr-cache/`
+3. 确认无误后设 `MT_OFFLINE=true`（compose 的 `environment` 或启动命令前加环境变量）
+
+> 在线模式（`MT_OFFLINE=false`，默认）下已有模型哈希校验：本地模型文件存在且 SHA-256 匹配就跳过下载、直接复用——不会重复下载模型；只有缺失或哈希不符才联网拉取。所以日常**并不需要**开离线模式，它主要服务于"部署到彻底断网的内网机"。
 
 ### 前提与限制
 
 - **CPU 架构一致**：镜像内 sharp / onnxruntime 为 `x86_64` 原生二进制，目标机须为同架构（arm64 需另构建）。
 - **glibc 运行环境**：镜像基于 `node:22-slim`（glibc），不能用 musl/alpine 系宿主机内核不兼容场景（一般 x86_64 Linux 均满足）。
 - **模型已齐全**：`models/ocr/pp-ocrv6-tiny` 与 `models/ocr-cache/*.txt` 必须随包带走，否则容器启动后仍会尝试联网下载。
-- 若目标机已有镜像仓库访问能力，可只传 `models/` + `docker-compose.yaml`，镜像从仓库 `pull` 即可。
+- **离线模式需 records.json**：`MT_OFFLINE=true` 时必须预置 `config/records.json`；在线模式则每次启动联网拉最新清单（很小）。
+- 若目标机已有镜像仓库访问能力，可只传 `models/` + `config/` + `docker-compose.yaml`，镜像从仓库 `pull` 即可。
 

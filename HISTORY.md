@@ -3,6 +3,11 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.25
+
+- docker：records.json（模型索引清单）持久化与离线部署支持。compose 新增 `MT_CONFIG_DIR=/app/config` + `./docker/config:/app/config` 挂载，records.json 持久化在宿主机，容器重建不重复联网下载；README「离线迁移」章节升级为四件套（镜像 + config + models + compose），补充「获取 records.json」（在线跑一次拷出 / curl 镜像站 `${MT_MODEL_MIRROR_URL}/records.json`）与「切换到离线模式（MT_OFFLINE=true）」操作说明，离线模式前提为 records.json 与模型均已预置
+- docker：build.sh 兼容 legacy builder（未装 buildx/无 BuildKit）自动降级 `--progress` 参数；`bun install` 详细日志改为 `ARG BUN_VERBOSE` 可配（默认静默，`DOCKER_BUILD_VERBOSE=1` 一键开启逐包日志，排查下载/网络问题用）
+
 ## v5.0.24
 
 - docker：修复 `bun install` 每次构建都重新安装的问题。根因是 `docker/package.json` 的 `version` 字段每次 bump 版本号时被手动同步，`COPY docker/package.json` 层哈希变化导致紧随其后的 `RUN bun install` 层缓存失效；而 bun.lock 的 root 条目不记录 version，固定它对 `--frozen-lockfile` 解析无影响。已将 `docker/package.json` version 固定为 `1.0.0` 并写入构建缓存说明（Dockerfile / README），以后 bump 不再同步该字段

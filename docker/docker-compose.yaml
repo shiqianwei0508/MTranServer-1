@@ -16,7 +16,9 @@
 #   - ./docker/models 挂载到容器 /app/models，翻译模型持久化在宿主机，
 #     容器删除/重建后模型不丢失。
 #   - 程序默认模型目录即为 /app/models（进程 CWD 下的 models/），此处用 MT_MODEL_DIR 显式声明。
-#   - 如需保留配置/日志，可另行挂载 /app/data 等目录（视程序数据目录而定）。
+#   - ./docker/config 挂载到容器 /app/config，持久化配置数据（如 records.json 模型索引清单），
+#     避免每次启动联网下载；离线模式（MT_OFFLINE=true）依赖该目录预置 records.json。
+#   - 如需保留日志，可另行挂载 /app/data 等目录（视程序数据目录而定）。
 
 services:
   mtranserver:
@@ -30,6 +32,7 @@ services:
       - MT_HOST=0.0.0.0              # 监听地址
       - MT_PORT=8989                 # 监听端口
       - MT_MODEL_DIR=/app/models     # 模型目录（与下方挂载一致）
+      - MT_CONFIG_DIR=/app/config    # 配置数据目录（records.json 等，与下方挂载一致）
       - MT_LOG_LEVEL=info            # 日志级别
       - MT_OFFLINE=false             # 是否离线模式
       - MT_ENABLE_UI=true            # 启用 Web UI
@@ -40,6 +43,10 @@ services:
     volumes:
       # 翻译模型持久化（强烈建议，避免重建容器后重新下载）:
       - ./docker/models:/app/models
+      # 配置数据持久化（records.json 模型索引清单等）:
+      # 在线模式可避免每次启动联网下载；离线模式（MT_OFFLINE=true）必须在此预置 records.json。
+      # 挂载目录属主为 root，在线模式需保证容器内 node(UID 1000) 可写: chown -R 1000:1000 docker/config
+      - ./docker/config:/app/config
       # OCR 字典/模型缓存持久化：ppu-paddle-ocr 的字典走包内置源下载到
       # $HOME/.cache/ppu-paddle-ocr，不受 MT_MODEL_MIRROR_URL 控制；新容器若不挂载会重新下载。
       # 挂到 models/ocr-cache 与 models/ 归在一起，首次下完后不再重复下载。
