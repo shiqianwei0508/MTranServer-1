@@ -2,7 +2,7 @@
 
 > **文档定位**：本文档基于真实部署过程整理，覆盖从环境准备、源码构建、原生依赖（ONNX Runtime / sharp）排坑、到 systemd 生产化部署的全流程。所有"踩坑记录"均来自 Kylin V11 + x86_64 + Bun 1.4.0 环境的实测。
 >
-> - 项目仓库：https://github.com/lan134342/MTranServer-1.git
+> - 项目仓库：https://github.com/shiqianwei0508/MTranServer-1.git
 > - 官方 Linux 部署参考：docs/deploy-linux.md（仓库内）
 > - 部署方式：**源码构建**（改过源码 / 自定义功能时的推荐方式）
 > - 更新日期：2026-08-22
@@ -173,7 +173,7 @@ from '/data/source/MTranServer-1/dist/main.js'
 ### 4.1 获取源码
 
 ```bash
-git clone https://github.com/lan134342/MTranServer-1.git /data/source/MTranServer-1
+git clone https://github.com/shiqianwei0508/MTranServer-1.git /data/source/MTranServer-1
 cd /data/source/MTranServer-1
 ```
 
