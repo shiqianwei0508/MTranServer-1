@@ -1,0 +1,4 @@
+# 统一 Docker 相关文件行尾为 LF
+# 防止 Windows 下 CRLF/LF 波动导致 Docker 构建 COPY 层哈希变化、层缓存失效
+docker/** text eol=lf
+*.sh text eol=lf

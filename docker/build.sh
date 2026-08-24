@@ -10,6 +10,12 @@
 #   - Dockerfile 位于 docker/Dockerfile，构建上下文为仓库根目录（便于 COPY 整个源码）
 #   - 构建时会执行 bun run build:node，原生依赖(sharp/onnxruntime)由 node_modules 自带，
 #     无需在镜像内系统安装 ONNX Runtime
+#   - 可选构建代理：设置环境变量 DOCKER_BUILD_PROXY（http/https 代理，如
+#     DOCKER_BUILD_PROXY=http://127.0.0.1:7890 ./docker/build.sh），会通过
+#     --build-arg BUILD_PROXY 传给 Dockerfile，供 bun install / apt 走代理。
+#     不设置则完全不启用代理，镜像可移植性不受影响。
+#     注意：bun / apt 不支持 socks5 代理，DOCKER_BUILD_PROXY 需为 http/https 协议；
+#     基础镜像拉取（FROM 指令）不受此代理控制，需配置 docker daemon。
 #
 set -euo pipefail
 
@@ -18,8 +24,20 @@ cd "$(dirname "$0")/.."
 
 TAG="${1:-harbor.gbim.vip/freedo/mtranserver:latest}"
 
-echo "==> Building MTranServer image: ${TAG}"
-docker build -f docker/Dockerfile -t "${TAG}" .
+# 可选透传构建代理
+BUILD_ARGS=()
+if [ -n "${DOCKER_BUILD_PROXY:-}" ]; then
+  echo "==> 启用构建代理: ${DOCKER_BUILD_PROXY}"
+  BUILD_ARGS=(--build-arg "BUILD_PROXY=${DOCKER_BUILD_PROXY}")
+fi
+
+# 构建日志默认用 --progress=plain，完整输出每个 RUN 层（含 bun install）的
+# stdout/stderr，避免 BuildKit 默认 tty 进度格式把中间日志折叠吞掉。
+# 需要恢复默认树状进度时设置 DOCKER_BUILD_PROGRESS=auto。
+PROGRESS="${DOCKER_BUILD_PROGRESS:-plain}"
+
+echo "==> Building MTranServer image: ${TAG} (--progress=${PROGRESS})"
+docker build --progress="${PROGRESS}" -f docker/Dockerfile -t "${TAG}" "${BUILD_ARGS[@]}" .
 
 echo "==> Build complete."
 echo "    启动: docker compose -f docker/docker-compose.yaml up -d"

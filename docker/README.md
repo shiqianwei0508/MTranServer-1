@@ -46,6 +46,30 @@ docker build -f docker/Dockerfile -t harbor.gbim.vip/freedo/mtranserver:latest .
 ./docker/build.sh harbor.gbim.vip/freedo/mtranserver:v1.0
 ```
 
+### 构建缓存说明
+
+`docker/package.json` 的 `version` 字段**固定为 `1.0.0`**，不随仓库版本号 bump。原因：Docker 层缓存中 `COPY docker/package.json` 层的源文件哈希一旦变化，紧随其后的 `RUN bun install` 层缓存就会失效，导致每次构建都重新安装依赖。而 bun.lock 的 root 条目不记录 version，固定它不影响 `--frozen-lockfile` 解析。**请勿修改该 version 字段**；依赖变动只更新 `dependencies`/`devDependencies` 与 `bun.lock`。
+
+### 可选构建代理
+
+构建阶段默认不启用任何代理（依赖走 npmmirror、apt 走阿里云，国内直连即可）。如在内网/受限环境需走代理，可用 `DOCKER_BUILD_PROXY` 环境变量启用（需为 **http/https** 代理，`bun`/`apt` 不支持 socks5）：
+
+```bash
+DOCKER_BUILD_PROXY=http://127.0.0.1:7890 ./docker/build.sh
+```
+
+> 说明：基础镜像（`FROM` 的 `oven/bun`、`node:22-slim`）拉取发生在 docker daemon 层，**不受此代理控制**，请在 docker daemon 配置 registry mirror 或 daemon 级代理。
+
+### 构建日志输出
+
+`build.sh` 默认以 `--progress=plain` 构建，完整输出每个 RUN 层（含 `bun install`）的 stdout/stderr，方便排查安装过程；`Dockerfile` 中 `bun install` 已加 `--verbose`，会打印每个包的解析/安装详情。日志中 `RUN bun install ...` 层显示 `CACHED` 即说明命中了依赖层缓存（未重新安装）。
+
+如需恢复 BuildKit 默认的树状进度格式，可设置环境变量：
+
+```bash
+DOCKER_BUILD_PROGRESS=auto ./docker/build.sh
+```
+
 ### 推送到 Harbor
 
 ```bash

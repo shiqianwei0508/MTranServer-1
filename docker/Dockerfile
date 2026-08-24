@@ -7,18 +7,40 @@ ENV VERSION=${VERSION}
 # 国内环境：bun 安装依赖使用 npmmirror 镜像源，避免访问官方 npm 源超时
 ENV BUN_CONFIG_REGISTRY=https://registry.npmmirror.com
 
+# 可选构建代理（默认不设置，不硬编码内网地址以保证镜像可移植性）。
+# 用法：docker build --build-arg BUILD_PROXY=http://user:pass@proxy:port ...
+# 说明：
+#   - bun install / apt 均不支持 socks5 代理，请提供 http/https 代理端口；
+#   - 未传 BUILD_PROXY 时各环境变量为空，工具自动忽略，行为与现在完全一致；
+#   - 基础镜像（FROM 的 oven/bun、node:22-slim）拉取发生在 docker daemon 层，
+#     不受本 ARG 控制，需在 daemon 配置 registry mirror / proxy。
+ARG BUILD_PROXY
+ENV HTTP_PROXY=${BUILD_PROXY} \
+    HTTPS_PROXY=${BUILD_PROXY} \
+    http_proxy=${BUILD_PROXY} \
+    https_proxy=${BUILD_PROXY} \
+    NO_PROXY=localhost,127.0.0.1,::1
+
 # 服务端镜像使用 docker/package.json（精简依赖清单），不含 electron / electron-builder
 # / @fontsource 等桌面端或冗余依赖，因此不会触发 electron postinstall 从 GitHub
 # 下载二进制（国内网络易报 connect ECONNREFUSED 20.205.243.166:443）。
 # 桌面端打包请使用仓库根 package.json 在本地执行 electron:build。
 # 配套 lock 为 docker/bun.lock（由 docker/package.json 生成），需同步维护。
+#
+# 缓存说明：docker/package.json 的 version 字段固定为 1.0.0，不随仓库版本号 bump。
+# bun.lock 的 root 条目不记录 version，依赖解析不受影响；反之，若每次 bump 版本号
+# 都改动该文件，COPY 层哈希变化会导致紧随其后的 RUN bun install 层缓存失效，
+# 每次构建都会重新安装依赖。请勿修改此 version 字段。
 
 COPY docker/package.json ./package.json
 COPY docker/bun.lock ./bun.lock
-RUN bun install --frozen-lockfile
+# --verbose：构建时输出 bun install 的详细过程日志（解析/下载/安装每个包），
+# 配合 build.sh 的 --progress=plain 可在构建日志中直接查看。
+# 仅影响日志级别，不影响 --frozen-lockfile 的解析与缓存命中。
+RUN bun install --frozen-lockfile --verbose
 
 COPY ui/package.json ui/bun.lock ./ui/
-RUN cd ui && bun install --frozen-lockfile
+RUN cd ui && bun install --frozen-lockfile --verbose
 
 COPY . .
 

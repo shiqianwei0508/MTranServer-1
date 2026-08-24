@@ -29,3 +29,4 @@
 - 绑定挂载卷首次建目录属主为 root，容器内 node(UID 1000) 无写权限 → 部署前需 `chown -R 1000:1000 docker/models/ocr-cache`。
 - 离线迁移三件套：镜像 + `models/` + `docker-compose.yaml`，目标机须 x86_64 + glibc 同架构。
 - 镜像体积优化用 `bun prune --production`（非 `bun install --production`，后者不删已装 dev 依赖）。
+- `docker/package.json` 的 version 固定 `1.0.0`，**不随根版本号 bump**（bun.lock 的 root 条目不记录 version，固定不影响 `--frozen-lockfile`；反之每次 bump 该文件会导致 Docker COPY 层缓存失效、`RUN bun install` 每次重跑）。.gitattributes 已将 docker/** 与 *.sh 固定 LF 防 CRLF 波动。

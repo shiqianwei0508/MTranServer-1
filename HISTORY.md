@@ -3,6 +3,13 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.24
+
+- docker：修复 `bun install` 每次构建都重新安装的问题。根因是 `docker/package.json` 的 `version` 字段每次 bump 版本号时被手动同步，`COPY docker/package.json` 层哈希变化导致紧随其后的 `RUN bun install` 层缓存失效；而 bun.lock 的 root 条目不记录 version，固定它对 `--frozen-lockfile` 解析无影响。已将 `docker/package.json` version 固定为 `1.0.0` 并写入构建缓存说明（Dockerfile / README），以后 bump 不再同步该字段
+- docker：新增 `.gitattributes`（`docker/**`、`*.sh` 固定 LF），防止 Windows CRLF 波动再造成 Docker COPY 层缓存失效
+- docker：Dockerfile 新增可选构建代理 `ARG BUILD_PROXY` + `ENV HTTP_PROXY/HTTPS_PROXY`，`build.sh` 支持环境变量 `DOCKER_BUILD_PROXY` 透传 `--build-arg`（需 http/https 代理，bun/apt 不支持 socks5；未设置则行为不变）。基础镜像拉取不受其控制，需配置 docker daemon
+- docker：`build.sh` 默认以 `--progress=plain` 构建（可 `DOCKER_BUILD_PROGRESS=auto` 恢复），Dockerfile 的 `bun install` 加 `--verbose`，构建日志中可完整查看依赖安装过程（仅影响日志级别，不影响缓存命中）
+
 ## v5.0.23
 
 - OCR：修复图片翻译「中文→英文」识别乱码问题。根因是本地 `pp-ocrv6-medium` 模型错误复用了 tiny 的精简字典——官方 medium（small 同）使用全量字典 `ppocrv6_dict.txt`（50+ 语言），tiny 使用精简字典 `ppocrv6_tiny_dict.txt`，两套字典字符集不同导致 CTC 字符索引错乱、识别全乱码。`ocr.ts` medium 分支已改用 `V6_MEDIUM_MODEL.charactersDictionary`（全量字典）
