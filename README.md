@@ -6,11 +6,25 @@
 
 一个超低资源消耗速度超快的离线翻译模型服务器，无需显卡。单个请求平均响应时间 50 毫秒。支持全世界主要语言的翻译。
 
+> **致谢原仓库**：本项目基于 [xxnuo/MTranServer](https://github.com/xxnuo/MTranServer) 二次开发（Fork）。
+> 感谢原作者 [@xxnuo](https://github.com/xxnuo) 及所有上游贡献者打造的出色离线翻译引擎。
+> 本 Fork 在其基础上扩展了 **OCR 图片翻译**、**模型管理器** 与 **Docker / 离线部署** 能力，详见下文「本 Fork 增强」。
+
 注意本模型服务器专注于`离线翻译`、`响应速度`、`跨平台部署`、`本地运行` 达到 `无限免费翻译` 的设计目标，受限于模型大小和优化程度，所以翻译质量肯定是不如大模型翻译的效果。需要高质量的翻译建议使用在线大模型 API。
 
-> v4 优化了内存占用，速度进一步提升，增强了稳定性，如果你在使用旧版建议立即升级！
-
 <img src="./images/preview.png" width="auto" height="460">
+
+## 本 Fork 增强（v5.x）
+
+本仓库在 upstream 基础上引入的额外能力（版本线自 `v5.0.0` 起独立演进）：
+
+- **OCR 图片翻译**：基于 `ppu-paddle-ocr` + 本地 onnx 模型，可直接翻译图片中的文字并回填图层。
+- **模型管理器**：支持从本地模型目录加载翻译 / OCR 模型，可配置模型镜像源（`MT_MODEL_MIRROR_URL`）。
+- **Docker 部署**：提供独立 `docker/` 目录（多阶段构建、镜像体积优化至 1G 内、中文字体支持）。
+- **离线迁移**：镜像 + `models/` + `docker-compose.yaml` 三件套可整体迁移到任意同架构（x86_64 / glibc）Docker 服务器，无需联网。
+- **Linux 部署文档**：含 Kylin 等环境的部署与排错说明。
+
+> 详细的 Docker 部署、OCR 模型获取、离线迁移步骤请查看 [`docker/README.md`](docker/README.md)。
 
 ## 在线试用 Demo
 
@@ -71,31 +85,17 @@ npm i -g mtranserver@latest
 
 然后启动 `mtranserver` 即可。
 
-#### Docker Compose 部署
+#### Docker 部署
 
-找一个空目录，编写 `compose.yml` 文件，内容如下：
+本 Fork 提供完整的 Docker 部署方案，包含镜像构建、OCR 模型获取、离线迁移等。
 
-```yml
-services:
-  mtranserver:
-    image: xxnuo/mtranserver:latest
-    container_name: mtranserver
-    restart: unless-stopped
-    ports:
-      - "8989:8989"
-    environment:
-      - MT_HOST=0.0.0.0
-      - MT_PORT=8989
-      - MT_OFFLINE=false
-      # - MT_API_TOKEN=your_secret_token_here
-    volumes:
-      - ./models:/app/models
-```
+**直接使用上游镜像**（通用）：
 
 ```bash
-docker pull xxnuo/mtranserver:latest
-docker compose up -d
+docker run -d --name mtranserver -p 8989:8989 -v ./models:/app/models xxnuo/mtranserver:latest
 ```
+
+**本 Fork 镜像 / 离线部署 / Kylin 环境**：请查看 [`docker/README.md`](docker/README.md)，内含 `docker-compose.yaml` 示例、ocr-cache 挂载、离线迁移三件套说明。
 
 ## 生态项目
 
@@ -131,7 +131,6 @@ TODO: 火热开发中
 | `/kiss`                         | POST | 简约翻译插件接口                   | [简约翻译](https://github.com/fishjar/kiss-translator)                      |
 | `/deepl`                        | POST | DeepL API v2 兼容接口              | 支持 DeepL API 的客户端                                                     |
 | `/deeplx`                       | POST | DeepLX 兼容接口                    | 支持 DeepLX 接口的客户端                                                    |
-| `/hcfy`                         | POST | 划词翻译兼容接口                   | [划词翻译](https://github.com/Selection-Translator/crx-selection-translate) |
 | `/hcfy`                         | POST | 划词翻译兼容接口                   | [划词翻译](https://github.com/Selection-Translator/crx-selection-translate) |
 | `/google/language/translate/v2` | POST | Google Translate API v2 兼容接口   | 支持 Google Translate API 的客户端                                          |
 | `/google/translate_a/single`    | GET  | Google translate_a/single 兼容接口 | 支持 Google 网页翻译的客户端                                                |
@@ -208,6 +207,8 @@ TODO: 火热开发中
 [![Star History Chart](https://api.star-history.com/svg?repos=xxnuo/MTranServer&type=Timeline)](https://www.star-history.com/#xxnuo/MTranServer&Timeline)
 
 ## Thanks
+
+特别感谢原仓库 [xxnuo/MTranServer](https://github.com/xxnuo/MTranServer) 及原作者 [@xxnuo](https://github.com/xxnuo)，本 Fork 在其基础上进行扩展。
 
 [Bergamot Project](https://browser.mt/) for awesome idea of local translation.
 
