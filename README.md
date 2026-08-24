@@ -8,7 +8,7 @@
 
 > **致谢原仓库**：本项目基于 [xxnuo/MTranServer](https://github.com/xxnuo/MTranServer) 二次开发（Fork）。
 > 感谢原作者 [@xxnuo](https://github.com/xxnuo) 及所有上游贡献者打造的出色离线翻译引擎。
-> 本 Fork 在其基础上扩展了 **OCR 图片翻译**、**模型管理器** 与 **Docker / 离线部署** 能力，详见下文「本 Fork 增强」。
+> 其中的 **OCR 图片翻译**、**模型管理器** 等核心功能来自 [@lan134342/MTranServer-1](https://github.com/lan134342/MTranServer-1)，本仓库在其基础上进行扩展与部署优化，详见下文「本 Fork 增强」。
 
 注意本模型服务器专注于`离线翻译`、`响应速度`、`跨平台部署`、`本地运行` 达到 `无限免费翻译` 的设计目标，受限于模型大小和优化程度，所以翻译质量肯定是不如大模型翻译的效果。需要高质量的翻译建议使用在线大模型 API。
 
@@ -208,7 +208,10 @@ TODO: 火热开发中
 
 ## Thanks
 
-特别感谢原仓库 [xxnuo/MTranServer](https://github.com/xxnuo/MTranServer) 及原作者 [@xxnuo](https://github.com/xxnuo)，本 Fork 在其基础上进行扩展。
+特别感谢以下项目与作者：
+
+- 原仓库 [xxnuo/MTranServer](https://github.com/xxnuo/MTranServer) 及原作者 [@xxnuo](https://github.com/xxnuo)，本 Fork 的翻译引擎基础来源于此。
+- [@lan134342/MTranServer-1](https://github.com/lan134342/MTranServer-1)，本仓库的 **OCR 图片翻译**、**模型管理器** 等核心功能来自该仓库（自 commit `1336ab64` 引入），本 Fork 在其基础上进行了 Docker 部署优化与扩展。
 
 [Bergamot Project](https://browser.mt/) for awesome idea of local translation.
 

@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.12
+
+- 修正 README 致谢归属：OCR 图片翻译 / 模型管理器等功能来自 [@lan134342/MTranServer-1](https://github.com/lan134342/MTranServer-1)（自 commit 1336ab64 引入），本 Fork 仅在其后做部署优化
+
 ## v5.0.11
 
 - 重构 README.md：顶部致谢原仓库（xxnuo/MTranServer），新增「本 Fork 增强（v5.x）」章节，Docker 部署指引至 docker/README.md，修复兼容接口表重复行
