@@ -1,3 +1,64 @@
+# 本 Fork 版本线（v5.x）
+
+> 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
+> 以下为 v5.0.0 之后的演进（按主题归并）。
+
+## v5.0.10
+
+- 文档：补全 HISTORY.md 至 v4.0.33 并补齐 v4.0.18~26 缺失版本记录
+- 文档：补充离线迁移章节（镜像 + models + docker-compose.yaml 可同架构离线部署）
+
+## v5.0.9
+
+- 新增 `get_ocr_models.sh` 脚本，便于批量获取 OCR onnx 模型
+
+## v5.0.8
+
+- Docker：挂载 OCR 缓存目录（`models/ocr-cache`），避免新容器重复下载字典
+- 文档：记录 ocr-cache 绑定挂载 root 属主导致 node 用户无写权限的坑
+
+## v5.0.7
+
+- Docker：安装 fontconfig 与中文字体（fonts-noto-cjk），修复图片翻译文字乱码
+
+## v5.0.6
+
+- Docker：用 `bun prune --production` 真正移除 dev 依赖，镜像体积从约 3G 缩至 1G 内
+
+## v5.0.5
+
+- Docker：复用 `node:22-slim` 自带 node 用户，避免 GID 1000 冲突
+
+## v5.0.4
+
+- Docker：建立独立 docker 目录，修正运行镜像并强化模型持久化
+- Docker：统一镜像 tag 为 `harbor.gbim.vip/freedo/mtranserver:latest`
+- Docker：新增部署 README，修正 compose 文件名与健康检查路径，运行镜像改用非 root 用户
+- Docker：增加国内源（npm/apt），修正用户创建语法
+- Docker：替换基础镜像为私有仓库地址，移除 `--mount` 兼容 legacy builder
+
+## v5.0.3
+
+- 文档：重整 Kylin 部署文档为顺序流程，补充 Node/nvm 安装与 npm 镜像源
+- 文档：更新项目仓库地址
+
+## v5.0.2
+
+- 修复图片翻译字体路径在 `--node` 构建下 ENOENT 的问题
+- 新增 Kylin 部署文档
+
+## v5.0.1
+
+- 改用 `--node` 构建模式以兼容原生模块（sharp / onnxruntime-node）
+
+## v5.0.0
+
+- 引入 OCR 图片翻译（ppu-paddle-ocr + 本地 onnx 模型）
+- 新增模型管理器（支持本地模型目录加载、模型镜像源配置）
+- 新增 Linux 部署文档
+
+---
+
 ## v4.0.33
 
 - 修复 HTML 翻译返回 500 错误（src/core/engine.ts）；新增 HTML 翻译测试覆盖
