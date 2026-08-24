@@ -1,0 +1,48 @@
+# MTranServer Docker 部署
+#
+# 用法（在仓库根目录执行）:
+#   docker compose -f docker/compose.yml up -d
+#
+# 镜像来源（二选一）:
+#   1. 本地构建: 先运行 ./docker/build.sh
+#   2. 拉取远程: 已推送到 harbor.gbim.vip/freedo/mtranserver:latest
+#
+# 配置说明:
+#   以下 environment 与 Kylin 部署文档中的 systemd service 文件保持一致（MT_ 环境变量方式），
+#   配置与启动命令解耦，敏感 token 不出现在进程列表。
+#   优先级: 命令行参数 > 环境变量 > 配置文件 > 默认值。
+#
+# 持久化说明（强烈建议）:
+#   - ./docker/models 挂载到容器 /app/models，翻译模型持久化在宿主机，
+#     容器删除/重建后模型不丢失。
+#   - 程序默认模型目录即为 /app/models（进程 CWD 下的 models/），此处用 MT_MODEL_DIR 显式声明。
+#   - 如需保留配置/日志，可另行挂载 /app/data 等目录（视程序数据目录而定）。
+
+services:
+  mtranserver:
+    image: harbor.gbim.vip/freedo/mtranserver:latest
+    container_name: mtranserver
+    restart: unless-stopped          # 对应 systemd: Restart=on-failure
+    ports:
+      - "8989:8989"
+    environment:
+      # ---- 全部配置走 MT_ 环境变量（对应 Kylin service 文件）----
+      - MT_HOST=0.0.0.0              # 监听地址
+      - MT_PORT=8989                 # 监听端口
+      - MT_MODEL_DIR=/app/models     # 模型目录（与下方挂载一致）
+      - MT_LOG_LEVEL=info            # 日志级别
+      - MT_OFFLINE=false             # 是否离线模式
+      - MT_ENABLE_UI=true            # 启用 Web UI
+      - MT_MODEL_DOWNLOAD_SOURCE=mirror        # 模型下载源: mirror
+      - MT_MODEL_MIRROR_URL=http://183.136.206.212:8787  # 模型镜像地址
+      # 如需 API 鉴权，取消下行注释并填入实际 token:
+      # - MT_API_TOKEN=your_secret_token_here
+    volumes:
+      # 翻译模型持久化（强烈建议，避免重建容器后重新下载）:
+      - ./docker/models:/app/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/api/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s

@@ -35,8 +35,19 @@ COPY --from=builder /app/package.json ./package.json
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+# 以非 root 用户运行（对应 Kylin 部署文档 service 中的 User=freedo）。
+# 固定 UID/GID=1000，便于与宿主机挂载卷权限对齐。
+RUN addgroup -g 1000 -S freedo \
+    && adduser -u 1000 -S freedo -G freedo \
+    && mkdir -p /app/models \
+    && chown -R freedo:freedo /app
+
+# 切换非 root 用户
+USER freedo
+
 ENV MT_HOST=0.0.0.0 \
     MT_PORT=8989 \
+    MT_MODEL_DIR=/app/models \
     NODE_ENV=production
 
 EXPOSE 8989

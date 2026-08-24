@@ -22,5 +22,5 @@ echo "==> Building MTranServer image: ${TAG}"
 docker build -f docker/Dockerfile -t "${TAG}" .
 
 echo "==> Build complete."
-echo "    启动: docker compose -f docker/compose.yml up -d"
+echo "    启动: docker compose -f docker/docker-compose.yaml up -d"
 echo "    或:   docker run -d -p 8989:8989 -v \"\$(pwd)/docker/models:/app/models\" ${TAG}"
