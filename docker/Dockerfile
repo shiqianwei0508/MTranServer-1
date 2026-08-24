@@ -41,8 +41,12 @@ COPY --from=builder /app/package.json ./package.json
 # 国内环境：将 apt 官方源替换为阿里云镜像，加速 curl 等依赖安装
 RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
 
-# 健康检测依赖 curl（slim 基础镜像默认不含）
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# 健康检测依赖 curl（slim 基础镜像默认不含）。
+# 同时安装 fontconfig + 中文字体：sharp 在把翻译文字绘制回图片时通过 fontconfig 查找字体，
+# 否则报 "Fontconfig error: Cannot load default config file" 且渲染出的文字为乱码。
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl fontconfig fonts-noto-cjk \
+    && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
 # 以非 root 用户运行。node:22-slim 基础镜像已自带非 root 用户 node (UID/GID=1000)，
