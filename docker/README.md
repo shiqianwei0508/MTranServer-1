@@ -114,7 +114,7 @@ docker compose -f docker/docker-compose.yaml logs -f
 | 挂载 | 容器内路径 | 作用 |
 |------|-----------|------|
 | `./docker/models` | `/app/models` | 翻译模型持久化，避免容器重建后重新下载 |
-| `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 字典缓存持久化。`ppu-paddle-ocr` 的字典走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载 |
+| `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 字典缓存持久化。`ppu-paddle-ocr` 的字典走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载。字典落盘后即为 `ocr-cache/ppocrv6_tiny_dict.txt`，已包含在 `models/` 内，可随 `models/` 一起打包迁移 |
 
 > 若需持久化其他数据（配置、日志等），可参照程序数据目录另行挂载。**不要删除 `./docker/models` 挂载**，否则每次重建容器都会重新下载模型。
 
@@ -161,3 +161,69 @@ curl http://localhost:8989/api/translate \
 | 原生依赖 | `node_modules` 自带 | `node_modules` 自带 |
 | 模型目录 | 挂载卷 `./docker/models` | `/data/mtranserver/models` |
 | 配置 | compose `environment` | systemd `Environment` / `EnvironmentFile` |
+
+---
+
+## 十一、离线迁移（完全离线部署）
+
+镜像、模型、编排三件套齐全后，可**整体迁移到任意支持 Docker 且 CPU 架构一致（x86_64 / glibc）的服务器**，目标机无需联网、无需访问任何模型下载源。
+
+### 迁移包含的内容
+
+```
+mtranserver/                         # 任意目录名均可
+├── docker-compose.yaml              # 编排（来自本目录）
+└── models/                          # 模型持久化目录（含 OCR 模型与字典，已自包含）
+    ├── be_en/ de_en/ en_zh-Hans/ …  # 各语言对翻译模型（bergamot .bin/.spm）
+    ├── ocr/
+    │   └── pp-ocrv6-tiny/           # OCR onnx 模型（det/rec/cls），由 findLocalModel() 本地加载
+    │       ├── PP-OCRv6/det/PP-OCRv6_det_tiny.onnx
+    │       ├── PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx
+    │       └── shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
+    └── ocr-cache/
+        └── ppocrv6_tiny_dict.txt    # OCR 字典（首次下载后落盘，已随 models/ 打包）
+```
+
+> 实际目录示例（Kylin V11 部署）：`models/` 下含 14 个翻译语言对目录 + `ocr/`（onnx）+ `ocr-cache/`（字典），共约 50 个文件，完整自包含。
+
+### 导出（源机）
+
+```bash
+# 1) 保存镜像（目标机无法访问 harbor 时）
+docker save harbor.gbim.vip/freedo/mtranserver:latest -o mtranserver-image.tar
+
+# 2) 打包编排与模型目录（模型目录可能较大，按实际体积选择传输方式）
+cp docker/docker-compose.yaml ./mtranserver-bundle/
+cp -r docker/models ./mtranserver-bundle/models
+tar czf mtranserver-bundle.tar.gz mtranserver-bundle/
+```
+
+最终迁移介质：`mtranserver-image.tar` + `mtranserver-bundle.tar.gz`（内含 `docker-compose.yaml` 与 `models/`）。
+
+### 导入与启动（目标机）
+
+```bash
+# 1) 载入镜像
+docker load -i mtranserver-image.tar
+
+# 2) 解包
+tar xzf mtranserver-bundle.tar.gz
+cd mtranserver-bundle
+
+# 3) 修正挂载目录属主（关键！）
+#    compose 首次 up 会自动建 ./models/ocr-cache 且属主为 root，容器内 node(UID 1000) 无写权限。
+#    事先手动建好并改属主，避免 OCR 字典写入失败。
+mkdir -p models/ocr-cache
+chown -R 1000:1000 models
+
+# 4) 启动
+docker compose -f docker-compose.yaml up -d
+```
+
+### 前提与限制
+
+- **CPU 架构一致**：镜像内 sharp / onnxruntime 为 `x86_64` 原生二进制，目标机须为同架构（arm64 需另构建）。
+- **glibc 运行环境**：镜像基于 `node:22-slim`（glibc），不能用 musl/alpine 系宿主机内核不兼容场景（一般 x86_64 Linux 均满足）。
+- **模型已齐全**：`models/ocr/pp-ocrv6-tiny` 与 `models/ocr-cache/*.txt` 必须随包带走，否则容器启动后仍会尝试联网下载。
+- 若目标机已有镜像仓库访问能力，可只传 `models/` + `docker-compose.yaml`，镜像从仓库 `pull` 即可。
+
