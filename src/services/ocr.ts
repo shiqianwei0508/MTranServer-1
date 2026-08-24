@@ -57,6 +57,24 @@ function modelFile(root: string, relativePath: string): string | null {
 function findLocalModel() {
   const root = path.join(getConfig().modelDir, 'ocr');
 
+  // PP-OCRv6 medium（服务端高精度，离线放置优先；官方无 server 档，medium 即 v6 最高精度档）
+  // 官方 PP-OCRv6_medium_det_onnx / PP-OCRv6_medium_rec_onnx 仓库内文件名为 inference.onnx，
+  // 下载后统一按本仓库命名风格重命名为 PP-OCRv6_medium_det.onnx / PP-OCRv6_medium_rec.onnx
+  const v6MediumRoot = path.join(root, 'pp-ocrv6-medium');
+  const v6MediumDetection = modelFile(v6MediumRoot, 'PP-OCRv6/det/PP-OCRv6_medium_det.onnx');
+  const v6MediumRecognition = modelFile(v6MediumRoot, 'PP-OCRv6/rec/PP-OCRv6_medium_rec.onnx');
+  if (v6MediumDetection && v6MediumRecognition) {
+    return {
+      name: 'pp-ocrv6-medium-local',
+      model: {
+        detection: v6MediumDetection,
+        recognition: v6MediumRecognition,
+        // medium 与 v6 系列共用同一中文字典表，暂复用 V6_TINY_MODEL 的字典
+        charactersDictionary: V6_TINY_MODEL.charactersDictionary,
+      },
+    };
+  }
+
   const v6Root = path.join(root, 'pp-ocrv6-tiny');
   const v6Detection = modelFile(v6Root, 'PP-OCRv6/det/PP-OCRv6_det_tiny.onnx');
   const v6Recognition = modelFile(v6Root, 'PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx');

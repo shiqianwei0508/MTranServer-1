@@ -3,6 +3,12 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.21
+
+- OCR：支持本地 PP-OCRv6 medium 服务端高精度模型（离线放置于 `modelDir/ocr/pp-ocrv6-medium/`），`findLocalModel()` 优先级最高，字典暂复用 V6 中文表（注：PP-OCRv6 官方无 server 档，medium 即 v6 最高精度档）
+- get_ocr_models.sh：支持参数指定下载模型（`v6-tiny` / `v5-mobile` / `v6-medium` / `all`，默认 v6-tiny），新增 v6-medium 下载分支
+- 源码版本号常量 `src/version/index.ts` 对齐 5.0.20（修复此前漏跟导致运行时展示 4.0.33 的问题）；铁则明确升级版本号须走 `bun run bump`
+
 ## v5.0.20
 
 - get_ocr_models.sh：将 pp-ocrv5-mobile 高精度备选模型下载逻辑并入脚本，脚本成为唯一完整来源；文档仅保留链接

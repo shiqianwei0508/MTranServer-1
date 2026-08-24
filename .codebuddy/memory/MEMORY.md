@@ -4,7 +4,8 @@
 - 本仓库自 commit `1336ab64` 起进入独立的 **v5.x 版本线**，`1336ab64` = **v5.0.0**。
 - 说明：`1336ab64` 本身是从 [@lan134342/MTranServer-1](https://github.com/lan134342/MTranServer-1) 引入的（含 OCR 图片翻译、模型管理器、Linux 部署文档等核心功能）。本 Fork 作者（用户）只写了 `1336ab64` **之后**的 commit（Docker 部署优化、镜像体积、离线迁移、文档等）。OCR 功能功劳归属 lan134342 仓库。
 - 每次完成**实质性改动并提交**时，自动将 `package.json` 的 `version` 提升一个 patch：`5.0.x` → `5.0.(x+1)`。
-- 同时必须在 `HISTORY.md` 顶部的「本 Fork 版本线（v5.x）」章节**新增对应版本条目**（按主题归并，参考 v5.0.1~5.0.10 的写法）。
+- **升级版本号必须使用 `bun run bump`（`scripts/bump.ts`）统一执行**，切勿手动只改 `package.json`。`bump.ts` 已包含 `updateTsFile("src/version/index.ts")`，会自动同步源码 `VERSION` 常量——之前 `4.0.33` 漏跟 `5.0.20` 就是没走脚本所致。漏改 `src/version/index.ts` 会导致运行时版本展示与实际发版不一致。
+- 同时必须在 `HISTORY.md` 顶部的「本 Fork 版本线（v5.x）」章节**新增对应版本条目**（按主题归并，参考 v5.0.1~v5.0.10 的写法）。
 - **不打 git tag**（除非用户明确要求）。
 - v4.x 系列为上游历史，保留不动；新版本一律从 v5.0.x 递增。
 

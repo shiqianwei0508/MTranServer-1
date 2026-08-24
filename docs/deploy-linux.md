@@ -172,10 +172,16 @@ node dist/main.js --download en-zh zh-en
 
 OCR 图片翻译功能依赖 PaddleOCR 模型，**不会自动下载**，需手动放到模型目录的 `ocr/` 子目录下。
 
-目录结构（`modelDir/ocr/`），服务启动按 `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型：
+目录结构（`modelDir/ocr/`），服务启动按 `pp-ocrv6-medium` → `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型（前者优先）：
 
 ```
 models/ocr/
+├── pp-ocrv6-medium/            # 服务端最高精度（离线放置），找到即用，性能要求高时推荐
+│   ├── PP-OCRv6/
+│   │   ├── det/PP-OCRv6_medium_det.onnx
+│   │   └── rec/PP-OCRv6_medium_rec.onnx
+│   └── shared/
+│       └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
 ├── pp-ocrv6-tiny/              # 默认使用，体积小（约 7MB）
 │   ├── PP-OCRv6/
 │   │   ├── det/PP-OCRv6_det_tiny.onnx
@@ -190,15 +196,24 @@ models/ocr/
         └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
 ```
 
-OCR 模型下载脚本见仓库根目录 [`get_ocr_models.sh`](../get_ocr_models.sh)，执行后会从镜像站拉取 `pp-ocrv6-tiny` 到 `modelDir/ocr/`。脚本默认仅下载默认模型；如需高精度 `pp-ocrv5-mobile` 备选，可参考下方官方模型源手动获取并放置到对应目录。
+OCR 模型下载脚本见仓库根目录 [`get_ocr_models.sh`](../get_ocr_models.sh)，支持参数指定要下载的模型，下载后落入对应目录：
+
+```bash
+./get_ocr_models.sh            # 默认下载 v6-tiny
+./get_ocr_models.sh v6-tiny    # PP-OCRv6 tiny（默认）
+./get_ocr_models.sh v5-mobile  # PP-OCRv5 mobile（高精度备选）
+./get_ocr_models.sh v6-medium  # PP-OCRv6 medium（服务端高精度，离线放置首选）
+./get_ocr_models.sh all        # 下载全部
+```
 
 > 官方模型源（当私有镜像站缺模型时从此获取）：
 > - PP-OCRv5 官方仓库：[HuggingFace PaddlePaddle/PP-OCRv5](https://huggingface.co/PaddlePaddle/PP-OCRv5) / [PaddleOCR GitHub](https://github.com/PaddlePaddle/PaddleOCR)
 > - PP-OCRv6 官方仓库：[HuggingFace PaddlePaddle/PP-OCRv6_tiny_det_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_tiny_det_onnx) / [ModelScope PP-OCRv6_tiny_rec_onnx](https://www.modelscope.cn/models/PaddlePaddle/PP-OCRv6_tiny_rec_onnx)
+> - PP-OCRv6 medium（服务端高精度）：[HuggingFace PaddlePaddle/PP-OCRv6_medium_det_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_det_onnx) + [PP-OCRv6_medium_rec_onnx](https://huggingface.co/PaddlePaddle/PP-OCRv6_medium_rec_onnx) / [ModelScope PP-OCRv6_medium_det_onnx](https://www.modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_det_onnx) + [PP-OCRv6_medium_rec_onnx](https://www.modelscope.cn/models/PaddlePaddle/PP-OCRv6_medium_rec_onnx)。注意：PP-OCRv6 官方**无 server 档**，medium 即 v6 最高精度档；两个仓库内的 onnx 文件**均命名为 `inference.onnx`**，下载后按本仓库命名风格重命名为 `PP-OCRv6_medium_det.onnx` / `PP-OCRv6_medium_rec.onnx`，分别放入 `det/` 与 `rec/` 子目录（det / rec 子目录名称与代码加载路径严格对应）。
 >
 > 下载后按上面的目录结构放置（det / rec 子目录名称与代码加载路径严格对应），服务启动会自动识别。
 
-服务启动时会按 `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型，找到哪个用哪个。
+服务启动时会按 `pp-ocrv6-medium` → `pp-ocrv6-tiny` → `pp-ocrv5-mobile` 顺序查找本地模型，找到哪个用哪个。
 
 ---
 
