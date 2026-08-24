@@ -192,6 +192,8 @@ models/ocr/
 
 一键下载脚本（从镜像站拉取 `pp-ocrv6-tiny`，可选追加 `pp-ocrv5-mobile`）：
 
+> 可直接将下方代码保存为 `get_ocr_models.sh` 并 `chmod +x` 后执行；`MIRROR` 与 `OCR_DIR` 可按实际环境修改。
+
 ```bash
 #!/bin/bash
 MIRROR="http://183.136.206.212:8787"
