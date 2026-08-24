@@ -40,6 +40,10 @@ services:
     volumes:
       # 翻译模型持久化（强烈建议，避免重建容器后重新下载）:
       - ./docker/models:/app/models
+      # OCR 字典/模型缓存持久化：ppu-paddle-ocr 的字典走包内置源下载到
+      # $HOME/.cache/ppu-paddle-ocr，不受 MT_MODEL_MIRROR_URL 控制；新容器若不挂载会重新下载。
+      # 挂到 models/ocr-cache 与 models/ 归在一起，首次下完后不再重复下载。
+      - ./docker/models/ocr-cache:/home/node/.cache/ppu-paddle-ocr
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8989/api/health"]
       interval: 30s
