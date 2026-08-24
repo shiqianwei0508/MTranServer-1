@@ -114,6 +114,7 @@ docker compose -f docker/docker-compose.yaml logs -f
 | 挂载 | 容器内路径 | 作用 |
 |------|-----------|------|
 | `./docker/models` | `/app/models` | 翻译模型持久化，避免容器重建后重新下载 |
+| `./docker/models/ocr-cache` | `/home/node/.cache/ppu-paddle-ocr` | OCR 字典缓存持久化。`ppu-paddle-ocr` 的字典走包内置源下载（**不受 `MT_MODEL_MIRROR_URL` 控制**），新容器若不挂载会重新下载 |
 
 > 若需持久化其他数据（配置、日志等），可参照程序数据目录另行挂载。**不要删除 `./docker/models` 挂载**，否则每次重建容器都会重新下载模型。
 
@@ -146,7 +147,8 @@ curl http://localhost:8989/api/translate \
 | 模型重复下载 | 确认 `./docker/models` 挂载存在且未被误删；`docker inspect mtranserver` 查 Mounts |
 | 首次翻译慢 / 超时 | 首次会下载对应语言对模型，属正常；确认 `MT_MODEL_MIRROR_URL` 可达 |
 | 镜像构建失败（native 模块） | 确保用 `node:22-slim`（glibc）而非 alpine；`--node` 模式会保留 `node_modules` 外部引用 |
-| 挂载目录无写入权限 | 宿主机 `./docker/models` 属主应为 UID 1000（与容器内 node 用户对齐），否则 `chown -R 1000:1000 docker/models` |
+| 挂载目录无写入权限 | 宿主机 `./docker/models` 及其子目录属主应为 UID 1000（与容器内 node 用户对齐），否则 `chown -R 1000:1000 docker/models` |
+| 绑定挂载卷变成 root 属主、容器内 node 用户写不进 | **典型症状**：`ls -l /app/models` 看到 `ocr-cache` 目录属主是 `root root`（其他模型目录是 `node node`），OCR 字典下载卡住/失败。原因：`docker compose up` 首次会自动在**宿主机**创建绑定挂载点目录，创建者为宿主机 root，因此该目录属主是 `root:root`、权限 755，容器内 node 用户（UID 1000）无写权限。翻译模型目录（`ocr`、`be_en` 等）因是容器内 node 进程创建的，属主正常为 `node`。**修复**：在宿主机手动 `chown -R 1000:1000 docker/models/ocr-cache`（UID 1000 = 容器内的 node 用户），重启容器即可。预防：先手动建好目录并改好属主再 `up`，Docker 就不会用 root 去建。注意 `Dockerfile` 里的 `chown -R node:node /app` 对挂载卷无效——卷内容在镜像层之外。 |
 
 ---
 
