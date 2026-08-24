@@ -26,66 +26,14 @@
 
 > 详细的 Docker 部署、OCR 模型获取、离线迁移步骤请查看 [`docker/README.md`](docker/README.md)。
 
-## 在线试用 Demo
-
-| 网站                                                                         | TOKEN                     | 其他接口                                                                       | 提供者                               |
-| ---------------------------------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------ | ------------------------------------ |
-| [ipacel.cc](https://MTranServer.ipacel.cc/ui/?token=__IpacEL_MT_API_TOKEN__) | `__IpacEL_MT_API_TOKEN__` | 沉浸式翻译: `https://MTranServer.ipacel.cc/imme?token=__IpacEL_MT_API_TOKEN__` | [@ApliNi](https://github.com/ApliNi) |
-
-感谢社区贡献者为用户提供试用服务！
-
 ## 使用说明
 
-现在支持桌面端一键启动！支持 Windows、Mac、Linux。
+本仓库仅支持 **Linux** 与 **Docker** 部署，不提供桌面端。
 
-### 桌面端
+- **Linux 部署**（Kylin 等环境）：参见 [docs/deploy-kylin.md](docs/deploy-kylin.md)，包含源码构建、Node/nvm 安装、模型获取与排错。
+- **Docker 部署**（推荐）：参见 [docker/README.md](docker/README.md)，包含镜像构建、OCR 模型获取、离线迁移与排错。
 
-#### 手动下载
-
-前往 [Releases](https://github.com/xxnuo/MTranServer/releases) 下载对应平台最新桌面端，直接安装启动，即可使用。
-
-桌面端启动后会创建一个托盘菜单，通过菜单可以方便的管理服务。
-
-程序自带的一个简单 UI 的地址和在线调试文档。
-
-具体使用说明可以直接跳转到 [生态项目](#生态项目)
-
-预览（最新版有更新）：
-
-![UI](./images/ui.png)
-
-![文档](./images/swagger.png)
-
-### 服务端
-
-推荐使用桌面端或者 Docker 部署，性能更佳使用方便。服务端手动部署供专业用户使用。
-
-#### 快速开始
-
-程序员朋友可以通过命令行直接启动服务器端：
-
-```bash
-npx mtranserver@latest
-```
-
-> `npx` 可以替换为你喜欢的任意一个包管理器，比如 `bunx`、`pnpx` 等。
-
-> **重要提示：**
->
-> 首次翻译某个语言对时，服务器会自动下载对应的翻译模型（除非启用了离线模式），这个过程可能需要等待一段时间（取决于网络速度和模型大小）。
-> 模型下载完成后，翻译请求将享受毫秒级的响应速度。建议在正式使用前先测试一次翻译，让服务器预先下载和加载模型。程序经常更新，如果遇到问题，可以尝试更新到最新版本。
-
-#### 快速安装
-
-```bash
-npm i -g mtranserver@latest
-```
-
-> `npm` 可以替换为你喜欢的任意一个包管理器，比如 `bun`、`pnpm` 等。
-
-然后启动 `mtranserver` 即可。
-
-#### Docker 部署
+### Docker 部署
 
 本 Fork 提供完整的 Docker 部署方案，包含镜像构建、OCR 模型获取、离线迁移等。
 

@@ -3,6 +3,14 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.14
+
+- README 使用说明改为仅支持 Linux 与 Docker 部署，移除桌面端及 npx/npm 服务端小节，链接 docs/deploy-kylin.md 与 docker/README.md
+
+## v5.0.13
+
+- 移除 README 中本仓库不提供的「在线试用 Demo」区块（该服务为上游第三方提供）
+
 ## v5.0.12
 
 - 修正 README 致谢归属：OCR 图片翻译 / 模型管理器等功能来自 [@lan134342/MTranServer-1](https://github.com/lan134342/MTranServer-1)（自 commit 1336ab64 引入），本 Fork 仅在其后做部署优化
