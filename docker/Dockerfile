@@ -7,6 +7,12 @@ ENV VERSION=${VERSION}
 # 国内环境：bun 安装依赖使用 npmmirror 镜像源，避免访问官方 npm 源超时
 ENV BUN_CONFIG_REGISTRY=https://registry.npmmirror.com
 
+# 服务端镜像不打包桌面端：electron 的 postinstall 会从 GitHub 下载二进制
+# （国内网络易报 connect ECONNREFUSED 20.205.243.166:443），显式跳过下载。
+# electron 仅用于桌面打包，且在下方 bun prune --production 中会被移除，
+# 不影响最终镜像。如需镜像内构建桌面端，可改用 ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
