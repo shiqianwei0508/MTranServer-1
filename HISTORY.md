@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.19
+
+- 纠正文档策略：保留根目录 `get_ocr_models.sh`，`docs/deploy-linux.md` 仅保留指向该脚本的链接，不再内联脚本详情
+
 ## v5.0.18
 
 - docs(deploy-linux): 将根目录 get_ocr_models.sh 合并进部署文档（含 v6/v5 下载），删除独立脚本，文档内提供保存即用的提示

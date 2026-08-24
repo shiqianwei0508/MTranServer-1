@@ -190,37 +190,7 @@ models/ocr/
         └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
 ```
 
-一键下载脚本（从镜像站拉取 `pp-ocrv6-tiny`，可选追加 `pp-ocrv5-mobile`）：
-
-> 可直接将下方代码保存为 `get_ocr_models.sh` 并 `chmod +x` 后执行；`MIRROR` 与 `OCR_DIR` 可按实际环境修改。
-
-```bash
-#!/bin/bash
-MIRROR="http://183.136.206.212:8787"
-OCR_DIR="/opt/mtranserver/models/ocr"
-
-# ---- pp-ocrv6-tiny（默认）----
-mkdir -p "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/det" \
-         "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/rec" \
-         "$OCR_DIR/pp-ocrv6-tiny/shared/cls"
-wget -c "$MIRROR/ocr/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"        -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"
-wget -c "$MIRROR/ocr/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"        -O "$OCR_DIR/pp-ocrv6-tiny/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"
-wget -c "$MIRROR/ocr/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx" -O "$OCR_DIR/pp-ocrv6-tiny/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx"
-
-# ---- pp-ocrv5-mobile（高精度备选，可选）----
-# 若私有镜像站 $MIRROR/ocr/PP-OCRv5/... 未同步，可从官方源获取：
-#   HuggingFace: https://huggingface.co/PaddlePaddle/PP-OCRv5 （collection）
-#   ModelScope : https://www.modelscope.cn/models/PaddlePaddle 下搜索 PP-OCRv5
-# 下载 ch_PP-OCRv5_det_mobile.onnx / ch_PP-OCRv5_rec_mobile.onnx 放到下方目录即可。
-mkdir -p "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/det" \
-         "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/rec" \
-         "$OCR_DIR/pp-ocrv5-mobile/shared/cls"
-wget -c "$MIRROR/ocr/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx"   -O "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/det/ch_PP-OCRv5_det_mobile.onnx"
-wget -c "$MIRROR/ocr/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx"   -O "$OCR_DIR/pp-ocrv5-mobile/PP-OCRv5/rec/ch_PP-OCRv5_rec_mobile.onnx"
-wget -c "$MIRROR/ocr/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx" -O "$OCR_DIR/pp-ocrv5-mobile/shared/cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx"
-
-echo "OCR 模型下载完成"
-```
+OCR 模型下载脚本见仓库根目录 [`get_ocr_models.sh`](../get_ocr_models.sh)，执行后会从镜像站拉取 `pp-ocrv6-tiny` 到 `modelDir/ocr/`。脚本默认仅下载默认模型；如需高精度 `pp-ocrv5-mobile` 备选，可参考下方官方模型源手动获取并放置到对应目录。
 
 > 官方模型源（当私有镜像站缺模型时从此获取）：
 > - PP-OCRv5 官方仓库：[HuggingFace PaddlePaddle/PP-OCRv5](https://huggingface.co/PaddlePaddle/PP-OCRv5) / [PaddleOCR GitHub](https://github.com/PaddlePaddle/PaddleOCR)
