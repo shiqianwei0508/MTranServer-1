@@ -104,8 +104,8 @@ docker compose -f docker/docker-compose.yaml logs -f
 ## 六、用户与权限
 
 - 运行镜像基于 `node:22-slim`（**glibc**，匹配 sharp / onnxruntime 原生二进制；不能用 alpine/musl）。
-- 容器内以**非 root 用户 `freedo`** 运行，固定 **UID/GID = 1000**，与 kylin 部署文档中 systemd 的 `User=freedo` 在命名上保持一致；固定 1000 便于宿主机挂载卷权限匹配。
-- `/app/models` 在镜像内已 `chown freedo:freedo`，运行时可正常写入模型。
+- 容器内以**非 root 用户 `node`** 运行（node:22-slim 自带，UID/GID = 1000），对应 Kylin 物理机部署中 systemd 的 `User=freedo`（均为非 root 运行，便于宿主机挂载卷权限匹配）。
+- `/app/models` 在镜像内已 `chown node:node`，运行时可正常写入模型。
 
 ---
 
@@ -146,7 +146,7 @@ curl http://localhost:8989/api/translate \
 | 模型重复下载 | 确认 `./docker/models` 挂载存在且未被误删；`docker inspect mtranserver` 查 Mounts |
 | 首次翻译慢 / 超时 | 首次会下载对应语言对模型，属正常；确认 `MT_MODEL_MIRROR_URL` 可达 |
 | 镜像构建失败（native 模块） | 确保用 `node:22-slim`（glibc）而非 alpine；`--node` 模式会保留 `node_modules` 外部引用 |
-| 挂载目录无写入权限 | 宿主机 `./docker/models` 属主应为 UID 1000（与容器 freedo 对齐），否则 `chown -R 1000:1000 docker/models` |
+| 挂载目录无写入权限 | 宿主机 `./docker/models` 属主应为 UID 1000（与容器内 node 用户对齐），否则 `chown -R 1000:1000 docker/models` |
 
 ---
 
