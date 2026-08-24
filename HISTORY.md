@@ -3,6 +3,11 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.23
+
+- OCR：修复图片翻译「中文→英文」识别乱码问题。根因是本地 `pp-ocrv6-medium` 模型错误复用了 tiny 的精简字典——官方 medium（small 同）使用全量字典 `ppocrv6_dict.txt`（50+ 语言），tiny 使用精简字典 `ppocrv6_tiny_dict.txt`，两套字典字符集不同导致 CTC 字符索引错乱、识别全乱码。`ocr.ts` medium 分支已改用 `V6_MEDIUM_MODEL.charactersDictionary`（全量字典）
+- docs/deploy-linux.md：OCR 章节补充识别字典说明（各模型对应字典、两套字典不可混用排查指引、在线自动下载/离线 curl 预置命令）
+
 ## v5.0.22
 
 - docker：新增 `docker/package.json`（linux/docker 服务端专用精简依赖清单）与配套 `docker/bun.lock`；Dockerfile 改用该清单安装依赖，构建不再安装/下载 electron，从根源解决国内网络访问 GitHub（`connect ECONNREFUSED 20.205.243.166:443`）导致 electron postinstall 下载二进制失败、镜像构建中断的问题

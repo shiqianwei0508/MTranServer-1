@@ -3,6 +3,7 @@ import path from 'path';
 import {
   PaddleOcrService,
   V5_MOBILE_MODEL,
+  V6_MEDIUM_MODEL,
   V6_SMALL_MODEL,
   V6_TINY_MODEL,
   type FlattenedPaddleOcrResult,
@@ -69,8 +70,10 @@ function findLocalModel() {
       model: {
         detection: v6MediumDetection,
         recognition: v6MediumRecognition,
-        // medium 与 v6 系列共用同一中文字典表，暂复用 V6_TINY_MODEL 的字典
-        charactersDictionary: V6_TINY_MODEL.charactersDictionary,
+        // 官方 V6_MEDIUM_MODEL 预设使用全量字典 ppocrv6_dict.txt（50+ 语言）。
+        // 切勿复用 V6_TINY_MODEL 的精简字典（ppocrv6_tiny_dict.txt）——
+        // 两套字典字符集不同，CTC 字符索引对不上，识别结果会全部乱码。
+        charactersDictionary: V6_MEDIUM_MODEL.charactersDictionary,
       },
     };
   }

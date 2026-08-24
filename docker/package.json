@@ -1,6 +1,6 @@
 {
   "name": "mtranserver-docker",
-  "version": "5.0.22",
+  "version": "5.0.23",
   "type": "module",
   "description": "MTranServer - Linux/Docker 服务端专用依赖清单（不含 electron/electron-builder 等桌面端依赖）",
   "scripts": {

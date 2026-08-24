@@ -14,6 +14,11 @@
 - 绝对禁止用 PowerShell / cmd / sed 读写或替换文件内容（曾因错误编码导致中文乱码、把反斜杠误写入，改废用户脚本）。
 - 唯一允许的 shell 用途是 git 版本控制命令（`git checkout/status/log` 等），且路径切换用 `Push-Location`/`Set-Location`。
 
+## 代理约定（2026-08-24）
+- 联网抓取（web_fetch/直连）失败时，自动使用代理 `socks5://192.168.30.42:11111`（用户原话写的是 `socket5://`，实际使用为 `socks5://`）。
+- 适用场景：查证官方文档、下载模型/字典、GitHub/HuggingFace 等直连被拒时。
+- 用法示例：`curl.exe -sL --proxy socks5://192.168.30.42:11111 "https://..."`。
+
 ## 铁则 3：git push 需用户确认
 - 不要随意 `git push`。只有用户明确说「push」「推送」「提交到远程」等指令时才执行。
 - 平时可以 `git add` 和 `git commit`，但 push 必须等用户确认。
