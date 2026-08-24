@@ -14,7 +14,7 @@
 
 services:
   mtranserver:
-    image: xxnuo/mtranserver:latest
+    image: harbor.gbim.vip/freedo/mtranserver:latest
     container_name: mtranserver
     restart: unless-stopped
     ports:

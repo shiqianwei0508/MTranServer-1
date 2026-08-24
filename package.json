@@ -27,7 +27,7 @@
     "push": "npm publish --registry=https://registry.npmjs.org",
     "build": "bun scripts/build.ts --single",
     "build:all": "bun scripts/build.ts --all",
-    "build:docker": "docker build -f docker/Dockerfile -t xxnuo/mtranserver:latest .",
+    "build:docker": "docker build -f docker/Dockerfile -t harbor.gbim.vip/freedo/mtranserver:latest .",
     "build:node": "bun scripts/build.ts --node",
     "build:dev": "bun scripts/build.ts --dev",
     "build:lib": "bun scripts/build.ts --lib",

@@ -3,7 +3,7 @@
 # MTranServer Docker 镜像构建脚本
 #
 # 用法:
-#   ./docker/build.sh                 # 使用默认 tag: xxnuo/mtranserver:latest
+#   ./docker/build.sh                 # 使用默认 tag: harbor.gbim.vip/freedo/mtranserver:latest
 #   ./docker/build.sh myrepo/mt:1.0   # 自定义 tag
 #
 # 说明:
@@ -16,7 +16,7 @@ set -euo pipefail
 # 回到仓库根目录作为构建上下文
 cd "$(dirname "$0")/.."
 
-TAG="${1:-xxnuo/mtranserver:latest}"
+TAG="${1:-harbor.gbim.vip/freedo/mtranserver:latest}"
 
 echo "==> Building MTranServer image: ${TAG}"
 docker build -f docker/Dockerfile -t "${TAG}" .
