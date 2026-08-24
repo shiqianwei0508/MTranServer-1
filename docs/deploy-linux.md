@@ -172,20 +172,14 @@ node dist/main.js --download en-zh zh-en
 
 OCR 图片翻译功能依赖 PaddleOCR 模型，**不会自动下载**，需手动放到模型目录的 `ocr/` 子目录下。
 
-目录结构（`modelDir/ocr/`）：
+目录结构（`modelDir/ocr/`），当前默认使用 `pp-ocrv6-tiny`：
 
 ```
 models/ocr/
-├── pp-ocrv6-tiny/              # 推荐，体积小（约 7MB）
-│   ├── PP-OCRv6/
-│   │   ├── det/PP-OCRv6_det_tiny.onnx
-│   │   └── rec/PP-OCRv6_rec_tiny.onnx
-│   └── shared/
-│       └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
-└── pp-ocrv5-mobile/            # 备选，精度更高（约 22MB）
-    ├── PP-OCRv5/
-    │   ├── det/ch_PP-OCRv5_det_mobile.onnx
-    │   └── rec/ch_PP-OCRv5_rec_mobile.onnx
+└── pp-ocrv6-tiny/              # 推荐，体积小（约 7MB）
+    ├── PP-OCRv6/
+    │   ├── det/PP-OCRv6_det_tiny.onnx
+    │   └── rec/PP-OCRv6_rec_tiny.onnx
     └── shared/
         └── cls/ch_PP-LCNet_x0_25_textline_ori_cls_mobile.onnx
 ```

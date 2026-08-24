@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.16
+
+- docs(deploy-linux): 删除未使用且无下载说明的 pp-ocrv5-mobile 备选模型段，目录结构仅保留默认使用的 pp-ocrv6-tiny
+
 ## v5.0.15
 
 - 移除 README 的 Star History 章节

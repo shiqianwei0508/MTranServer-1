@@ -1,6 +1,6 @@
 {
   "name": "mtranserver",
-  "version": "5.0.15",
+  "version": "5.0.16",
   "type": "module",
   "description": "Translation server",
   "main": "./dist/index.js",
