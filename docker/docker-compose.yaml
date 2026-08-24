@@ -1,7 +1,7 @@
 # MTranServer Docker 部署
 #
 # 用法（在仓库根目录执行）:
-#   docker compose -f docker/compose.yml up -d
+#   docker compose -f docker/docker-compose.yaml up -d
 #
 # 镜像来源（二选一）:
 #   1. 本地构建: 先运行 ./docker/build.sh

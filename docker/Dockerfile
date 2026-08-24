@@ -4,6 +4,9 @@ WORKDIR /app
 ARG VERSION
 ENV VERSION=${VERSION}
 
+# 国内环境：bun 安装依赖使用 npmmirror 镜像源，避免访问官方 npm 源超时
+ENV BUN_CONFIG_REGISTRY=https://registry.npmmirror.com
+
 COPY package.json bun.lock ./
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile
@@ -31,14 +34,18 @@ COPY --from=builder /app/dist ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 
+# 国内环境：将 apt 官方源替换为阿里云镜像，加速 curl 等依赖安装
+RUN sed -i 's|deb.debian.org|mirrors.aliyun.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
 # 健康检测依赖 curl（slim 基础镜像默认不含）
 RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 以非 root 用户运行（对应 Kylin 部署文档 service 中的 User=freedo）。
+# 基础镜像为 Debian (node:22-slim)，使用 useradd/groupadd（来自 shadow 包，slim 自带）；
 # 固定 UID/GID=1000，便于与宿主机挂载卷权限对齐。
-RUN addgroup -g 1000 -S freedo \
-    && adduser -u 1000 -S freedo -G freedo \
+RUN groupadd -g 1000 freedo \
+    && useradd -u 1000 -g freedo -M -s /usr/sbin/nologin freedo \
     && mkdir -p /app/models \
     && chown -R freedo:freedo /app
 

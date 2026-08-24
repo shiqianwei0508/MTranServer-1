@@ -24,6 +24,7 @@ docker/
 - Docker ≥ 20.10 且包含 Compose v2（`docker compose` 子命令可用）
 - 可访问镜像仓库 `harbor.gbim.vip`（拉取或推送）
 - 服务器可访问模型下载源（默认公网；内网可设 `MT_MODEL_MIRROR_URL` 走镜像）
+- 国内环境：`Dockerfile` 已内置 npm（npmmirror）与 apt（阿里云）国内源；拉取 `oven/bun`、`node` 基础镜像如需加速，请在 docker daemon 配置 registry mirror（如 `https://registry.npmmirror.com` 或阿里云容器镜像服务）
 
 ---
 
@@ -103,7 +104,7 @@ docker compose -f docker/docker-compose.yaml logs -f
 ## 六、用户与权限
 
 - 运行镜像基于 `node:22-slim`（**glibc**，匹配 sharp / onnxruntime 原生二进制；不能用 alpine/musl）。
-- 容器内以**非 root 用户 `freedo`** 运行，固定 **UID/GID = 1000**，与物理机部署的 `User=freedo` 对齐，便于宿主机挂载卷权限匹配。
+- 容器内以**非 root 用户 `freedo`** 运行，固定 **UID/GID = 1000**，与 kylin 部署文档中 systemd 的 `User=freedo` 在命名上保持一致；固定 1000 便于宿主机挂载卷权限匹配。
 - `/app/models` 在镜像内已 `chown freedo:freedo`，运行时可正常写入模型。
 
 ---
