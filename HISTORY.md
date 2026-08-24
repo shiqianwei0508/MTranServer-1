@@ -3,6 +3,12 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.22
+
+- docker：新增 `docker/package.json`（linux/docker 服务端专用精简依赖清单）与配套 `docker/bun.lock`；Dockerfile 改用该清单安装依赖，构建不再安装/下载 electron，从根源解决国内网络访问 GitHub（`connect ECONNREFUSED 20.205.243.166:443`）导致 electron postinstall 下载二进制失败、镜像构建中断的问题
+- 精简范围：devDependencies 剔除 electron / electron-builder / tsx / 全部 @types，仅保留 Docker 构建必需的 tsoa / @tsoa/runtime / typescript；运行时移除无任何引用的 @fontsource/noto-sans-sc（字体已 check-in `src/assets/fonts/`）
+- 根 package.json 保持不变，桌面端打包（electron:build）不受影响；docker 清单依赖版本与根清单同步维护（依赖变动用 `bun install --lockfile-only --cwd docker` 重生成 lock）
+
 ## v5.0.21
 
 - OCR：支持本地 PP-OCRv6 medium 服务端高精度模型（离线放置于 `modelDir/ocr/pp-ocrv6-medium/`），`findLocalModel()` 优先级最高，字典暂复用 V6 中文表（注：PP-OCRv6 官方无 server 档，medium 即 v6 最高精度档）

@@ -1,0 +1,33 @@
+{
+  "name": "mtranserver-docker",
+  "version": "5.0.22",
+  "type": "module",
+  "description": "MTranServer - Linux/Docker 服务端专用依赖清单（不含 electron/electron-builder 等桌面端依赖）",
+  "scripts": {
+    "build": "bun scripts/build.ts --single",
+    "build:node": "bun scripts/build.ts --node",
+    "build:all": "bun scripts/build.ts --all",
+    "bump": "bun scripts/bump.ts",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@tsoa/runtime": "^7.0.0-alpha.0",
+    "tsoa": "^7.0.0-alpha.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-validator": "^7.3.1",
+    "fzstd": "^0.1.1",
+    "lru-cache": "^11.2.4",
+    "multer": "^2.2.0",
+    "onnxruntime-node": "^1.27.0",
+    "ppu-paddle-ocr": "^6.3.0",
+    "proxy-agent": "^8.0.2",
+    "sharp": "^0.35.3",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

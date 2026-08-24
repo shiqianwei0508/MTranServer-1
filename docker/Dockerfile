@@ -7,13 +7,14 @@ ENV VERSION=${VERSION}
 # 国内环境：bun 安装依赖使用 npmmirror 镜像源，避免访问官方 npm 源超时
 ENV BUN_CONFIG_REGISTRY=https://registry.npmmirror.com
 
-# 服务端镜像不打包桌面端：electron 的 postinstall 会从 GitHub 下载二进制
-# （国内网络易报 connect ECONNREFUSED 20.205.243.166:443），显式跳过下载。
-# electron 仅用于桌面打包，且在下方 bun prune --production 中会被移除，
-# 不影响最终镜像。如需镜像内构建桌面端，可改用 ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
-ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
+# 服务端镜像使用 docker/package.json（精简依赖清单），不含 electron / electron-builder
+# / @fontsource 等桌面端或冗余依赖，因此不会触发 electron postinstall 从 GitHub
+# 下载二进制（国内网络易报 connect ECONNREFUSED 20.205.243.166:443）。
+# 桌面端打包请使用仓库根 package.json 在本地执行 electron:build。
+# 配套 lock 为 docker/bun.lock（由 docker/package.json 生成），需同步维护。
 
-COPY package.json bun.lock ./
+COPY docker/package.json ./package.json
+COPY docker/bun.lock ./bun.lock
 RUN bun install --frozen-lockfile
 
 COPY ui/package.json ui/bun.lock ./ui/
@@ -26,7 +27,7 @@ RUN if [ -z "$VERSION" ]; then VERSION=$(bun -p "require('./package.json').versi
 
 RUN bun run build:node
 
-# 构建完成后，移除 devDependencies（electron/typescript/tsoa 等）及其独有传递依赖，
+# 构建完成后，移除 devDependencies（typescript/tsoa 等）及其独有传递依赖，
 # 显著缩小最终镜像体积。
 # 注意：bun install --production 不会删除已安装的 dev 包，必须用 prune 才能真正移除；
 # prune --production 仅删 dev 部分，dependencies 与 optionalDependencies（如 @img/sharp-linux-x64）
