@@ -61,10 +61,22 @@ if (isLib) {
 
 if (isNode) {
   console.log("Building for Node...");
+  await $`bun build src/main.ts src/desktop.ts --outdir dist --target node --format esm --minify \
+    --external sharp \
+    --external @img/sharp-linux-x64 \
+    --external onnxruntime-node \
+    --external onnxruntime-binding`;
+  console.log("Build complete!");
+  process.exit(0);
+}
+
+/* if (isNode) {
+  console.log("Building for Node...");
   await $`bun build src/main.ts src/desktop.ts --outdir dist --target node --format esm --minify`;
   console.log("Build complete!");
   process.exit(0);
 }
+*/
 
 if (isSingle) {
   console.log("Building single binary...");
