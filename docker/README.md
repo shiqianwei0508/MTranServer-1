@@ -62,7 +62,15 @@ DOCKER_BUILD_PROXY=http://127.0.0.1:7890 ./docker/build.sh
 
 ### 构建日志输出
 
-`build.sh` 默认以 `--progress=plain` 构建，完整输出每个 RUN 层（含 `bun install`）的 stdout/stderr，方便排查安装过程；`Dockerfile` 中 `bun install` 已加 `--verbose`，会打印每个包的解析/安装详情。日志中 `RUN bun install ...` 层显示 `CACHED` 即说明命中了依赖层缓存（未重新安装）。
+`build.sh` 默认以 `--progress=plain` 构建，完整输出每个 RUN 层（含 `bun install`）的 stdout/stderr。`bun install` 默认**静默安装**（bun 在非 TTY 下无过程输出，只打印一行 `N packages installed`），避免日志刷屏；日志中 `RUN bun install ...` 层显示 `CACHED` 即说明命中了依赖层缓存（未重新安装）。
+
+排查依赖下载 / 网络问题（如"空白卡住"疑似无响应）时，可开启 bun 的逐包安装日志，实时查看每个包的下载 / 解压详情：
+
+```bash
+DOCKER_BUILD_VERBOSE=1 ./docker/build.sh
+```
+
+> 注意：开启/关闭该开关会改变 Dockerfile `ARG` 值，使依赖安装层缓存失效并触发一次重装，属预期行为（bun 自带全局 tarball 缓存，重装较快）。
 
 如需恢复 BuildKit 默认的树状进度格式，可设置环境变量：
 

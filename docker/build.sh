@@ -16,6 +16,9 @@
 #     不设置则完全不启用代理，镜像可移植性不受影响。
 #     注意：bun / apt 不支持 socks5 代理，DOCKER_BUILD_PROXY 需为 http/https 协议；
 #     基础镜像拉取（FROM 指令）不受此代理控制，需配置 docker daemon。
+#   - 可选 bun install 详细日志：设置环境变量 DOCKER_BUILD_VERBOSE=1 会透传
+#     --build-arg BUN_VERBOSE=--verbose，逐包打印安装过程（排查下载/网络问题时用）。
+#     默认静默安装；开关该选项会使依赖安装层缓存失效并触发一次重装。
 #
 set -euo pipefail
 
@@ -28,7 +31,16 @@ TAG="${1:-harbor.gbim.vip/freedo/mtranserver:latest}"
 BUILD_ARGS=()
 if [ -n "${DOCKER_BUILD_PROXY:-}" ]; then
   echo "==> 启用构建代理: ${DOCKER_BUILD_PROXY}"
-  BUILD_ARGS=(--build-arg "BUILD_PROXY=${DOCKER_BUILD_PROXY}")
+  BUILD_ARGS+=(--build-arg "BUILD_PROXY=${DOCKER_BUILD_PROXY}")
+fi
+
+# 可选 bun install 详细日志（排查依赖下载 / 网络问题时开启）：
+#   DOCKER_BUILD_VERBOSE=1 ./docker/build.sh
+# 会透传 --build-arg BUN_VERBOSE=--verbose，逐包打印下载/解压过程。
+# 注意：开关该选项会使依赖安装层缓存失效并触发一次重装（属预期行为）。
+if [ -n "${DOCKER_BUILD_VERBOSE:-}" ]; then
+  echo "==> 启用 bun install 详细日志 (--verbose)"
+  BUILD_ARGS+=(--build-arg "BUN_VERBOSE=--verbose")
 fi
 
 # 构建日志默认用 --progress=plain，完整输出每个 RUN 层（含 bun install）的

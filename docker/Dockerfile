@@ -34,13 +34,15 @@ ENV HTTP_PROXY=${BUILD_PROXY} \
 
 COPY docker/package.json ./package.json
 COPY docker/bun.lock ./bun.lock
-# --verbose：构建时输出 bun install 的详细过程日志（解析/下载/安装每个包），
-# 配合 build.sh 的 --progress=plain 可在构建日志中直接查看。
+# 默认静默安装（bun 在非 TTY 下无过程输出，只打印一行摘要），避免日志刷屏。
+# 需要排查依赖下载 / 网络问题时，构建时传 --build-arg BUN_VERBOSE=--verbose
+# （build.sh 可用 DOCKER_BUILD_VERBOSE=1 一键开启），逐包打印下载/解压详情。
 # 仅影响日志级别，不影响 --frozen-lockfile 的解析与缓存命中。
-RUN bun install --frozen-lockfile --verbose
+ARG BUN_VERBOSE=""
+RUN bun install --frozen-lockfile $BUN_VERBOSE
 
 COPY ui/package.json ui/bun.lock ./ui/
-RUN cd ui && bun install --frozen-lockfile --verbose
+RUN cd ui && bun install --frozen-lockfile $BUN_VERBOSE
 
 COPY . .
 
