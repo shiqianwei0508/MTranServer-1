@@ -20,10 +20,12 @@ RUN if [ -z "$VERSION" ]; then VERSION=$(bun -p "require('./package.json').versi
 
 RUN bun run build:node
 
-# 构建完成后，仅保留运行时依赖（移除 devDependencies 如 electron/typescript/tsoa 等），
-# 显著缩小最终镜像体积。运行时所需包(sharp/onnxruntime/express 等)均在 dependencies 中，
-# build:node 已将其标记为 external，--production 不会误删。
-RUN bun install --frozen-lockfile --production
+# 构建完成后，移除 devDependencies（electron/typescript/tsoa 等）及其独有传递依赖，
+# 显著缩小最终镜像体积。
+# 注意：bun install --production 不会删除已安装的 dev 包，必须用 prune 才能真正移除；
+# prune --production 仅删 dev 部分，dependencies 与 optionalDependencies（如 @img/sharp-linux-x64）
+# 均保留，不影响运行时加载。build:node 已将 sharp/onnxruntime 标记为 external，需由 node_modules 提供。
+RUN bun prune --production
 
 FROM harbor.gbim.vip/dockerio/node:22-slim
 
