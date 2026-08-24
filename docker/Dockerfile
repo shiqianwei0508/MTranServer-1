@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS builder
+FROM harbor.gbim.vip/dockerio/oven/bun:1 AS builder
 WORKDIR /app
 
 ARG VERSION
@@ -23,7 +23,7 @@ RUN if [ -z "$VERSION" ]; then VERSION=$(bun -p "require('./package.json').versi
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun run build:node
 
-FROM node:22-slim
+FROM harbor.gbim.vip/dockerio/node:22-slim
 
 WORKDIR /app
 
