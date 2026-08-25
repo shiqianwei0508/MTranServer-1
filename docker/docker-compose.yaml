@@ -52,8 +52,9 @@ services:
       # 挂到 models/ocr-cache 与 models/ 归在一起，首次下完后不再重复下载。
       - ./docker/models/ocr-cache:/home/node/.cache/ppu-paddle-ocr
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8989/api/health"]
-      interval: 30s
+      # 实际路由为 GET /health（src/controllers/system.controller.ts，无 /api 前缀）
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8989/health"]
+      interval: 10s
       timeout: 3s
-      retries: 3
-      start_period: 30s
+      retries: 6
+      start_period: 10s
