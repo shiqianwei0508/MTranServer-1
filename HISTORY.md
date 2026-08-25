@@ -3,6 +3,11 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.1.1
+
+- 新增手动触发自动更新接口 `POST /api/models/auto-update`：立即在后台执行一次自动更新流程（刷新清单 + 下载前 10 语言模型），复用与定时任务完全相同的逻辑（30 分钟超时保护、失败隔离、offline 互斥、重入保护）；返回 `202 Accepted` 表示已受理，已在更新中/已禁用/服务关闭中返回 `200` 并带 `triggered:false` 与对应 `reason`；不阻塞请求、不影响现有定时调度
+- 文件：`src/models/auto-update.ts`（导出 `triggerAutoUpdateNow()`）、`src/controllers/model.controller.ts`（新增接口）；文档 `docs/model-auto-update.md`、`docker/README.md` 补充手动触发说明与 curl 示例；前端 `ModelManagerDialog` 未加按钮（按需求仅后端接口）
+
 ## v5.1.0
 
 - 新增「模型自动更新」后台调度器：服务监听端口成功后才挂起（不影响启动速度），按配置周期性刷新 Mozilla 模型库清单（`refreshRecords`）并自动下载内置前 10 常用语言（zh,en,ja,ko,ru,fr,de,es,pt,ar）与英语的双向配对模型；已装模型经哈希校验自动跳过，几乎零带宽开销
