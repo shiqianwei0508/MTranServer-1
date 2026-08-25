@@ -20,6 +20,12 @@
 - 适用场景：查证官方文档、下载模型/字典、GitHub/HuggingFace 等直连被拒时。
 - 用法示例：`curl.exe -sL --proxy socks5://192.168.30.42:11111 "https://..."`。
 
+## 铁则 4：`.codebuddy/` 目录必须强制入库
+- `.codebuddy/`（含 `memory/`、`plans/` 等全部子目录与文件）是**项目资产，必须随代码一起 git 提交**，不得按"本地工作记忆"为由排除。
+- 用户明确要求：无论 AI 工作记忆、计划草稿（plans/）、还是版本草稿，均视为应入库内容。
+- 执行 `git add` 时应包含 `.codebuddy/`（如 `git add .codebuddy/` 或 `git add -A` 后确认其被纳入）；用户说 "commit all" 时必须把 `.codebuddy/` 一并提交。
+- 注意：`.codebuddy/` 中的文件多为 AI 生成/维护，但属用户意志要求入库，无需过滤。
+
 ## 铁则 3：git push 需用户确认
 - 不要随意 `git push`。只有用户明确说「push」「推送」「提交到远程」等指令时才执行。
 - 平时可以 `git add` 和 `git commit`，但 push 必须等用户确认。
