@@ -20,6 +20,9 @@ import { registerOcrRoutes } from './ocr-routes.js';
 export async function startServer({ handleSignals = true } = {}) {
   const config = getConfig();
 
+  // 显式初始化日志级别，避免 getLogLevel() 惰性缓存把级别锁死为首次调用的默认值。
+  logger.setLogLevel(config.logLevel as any);
+
   logger.info('Initializing MTranServer...');
 
   await fs.mkdir(config.modelDir, { recursive: true });

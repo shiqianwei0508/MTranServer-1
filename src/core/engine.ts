@@ -1,6 +1,7 @@
 import { BergamotModule } from '@/core/interfaces.js';
 import { ModelBuffers } from '@/core/loader.js';
 import { isCJKCode } from '@/utils/lang-alias.js';
+import * as logger from '@/logger/index.js';
 
 export interface TranslationOptions {
   sourceLang?: string;
@@ -218,7 +219,7 @@ export class TranslationEngine {
         responses.delete();
       }
     } catch (error: any) {
-      console.error(`WASM Error Context: TextLength=${cleanedText.length}, Options=${JSON.stringify(options)}`);
+      logger.error(`WASM Error Context: TextLength=${cleanedText.length}, Options=${JSON.stringify(options)}`);
       throw error;
     } finally {
       messages.delete();
@@ -417,7 +418,7 @@ export class TranslationEngine {
       }
       this.isReady = false;
     } catch (error) {
-      console.error('Error during cleanup:', error);
+      logger.error('Error during cleanup:', error);
     }
   }
 }

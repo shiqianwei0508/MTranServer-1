@@ -7,7 +7,7 @@ import { DownloadCommand } from './server/download';
 import { LanguagesCommand } from './server/languages';
 
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
-  console.log(`
+  logger.important(`
 MTranServer - Machine Translation Server
 
 Usage: mtranserver [options]

@@ -3,6 +3,10 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.0.27
+
+- 日志系统：修复「debug 模式反而日志更少」问题。根因有两点：(1) `getLogLevel()` 惰性缓存首次读取结果，`startServer()` 早期调用 `logger.info` 把级别锁死，且从未显式初始化——已在 `startServer()` 的 `getConfig()` 之后立即 `logger.setLogLevel(config.logLevel)` 固化真实级别；(2) `core/factory.ts`、`core/engine.ts`、`server/languages.ts`、`main.ts` 多处裸 `console.*` 绕过 logger 不受级别控制，造成「受控日志被过滤、裸 console 却总打印」的割裂观感——已全部收敛为 `logger.warn/error/info/important`，统一受级别与 `logToFile` 约束（`logger/index.ts` 内部 4 处 console 为自身实现，正确保留）。级别过滤（`shouldLog`）优先于 `logConsole` 控制台开关，二者已解耦；帮助信息改用 `logger.important`（force，强制可见）
+
 ## v5.0.26
 
 - OCR：修正离线模式行为——候选顺序线上线下一致（本地 `models/ocr/` onnx 优先，`V6_SMALL_MODEL` 预设兜底），**离线模式（MT_OFFLINE=true）禁止联网下载**：本地模型缺失且预设缓存不齐全时直接报错并给出预置指引，绝不尝试联网后失败。预设模型/字典走同一缓存目录 `~/.cache/ppu-paddle-ocr`（compose 挂载 `./docker/models/ocr-cache`），缓存命中直接读取、不联网，离线只需预置三件套（`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）或本地模型

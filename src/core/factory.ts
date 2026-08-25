@@ -8,6 +8,7 @@ import { decompress } from 'fzstd'
 import { ProxyAgent } from 'proxy-agent'
 import { ResourceLoader } from '@/core/loader.js'
 import { FileSystem } from '@/core/interfaces.js'
+import * as logger from '@/logger/index.js'
 
 export interface DownloadOptions {
   url: string
@@ -77,7 +78,7 @@ export class Downloader {
         lastError = error
         const nextCandidate = candidates[index + 1]
         if (nextCandidate) onFallback?.(candidate, nextCandidate)
-        console.warn(`Download source failed: ${candidate}`, error)
+        logger.warn(`Download source failed: ${candidate}`, error)
       }
     }
 
