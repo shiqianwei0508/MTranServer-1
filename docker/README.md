@@ -125,9 +125,20 @@ docker compose -f docker/docker-compose.yaml logs -f
 | `MT_LOG_LEVEL` | 日志级别 | `info` |
 | `MT_OFFLINE` | 是否离线模式（`true` 时完全不联网，需预置 `records.json` 与模型，见"十一、离线迁移"） | `false` |
 | `MT_ENABLE_UI` | 是否启用 Web UI | `true` |
-| `MT_MODEL_DOWNLOAD_SOURCE` | 模型下载源 | `mirror` |
-| `MT_MODEL_MIRROR_URL` | 模型镜像地址 | `http://183.136.206.212:8787` |
+| `MT_MODEL_DOWNLOAD_SOURCE` | 模型下载源：`mirror`=走镜像站（默认，需配合 `MT_MODEL_MIRROR_URL`）；`official`=走 Firefox 官方源（含中文语言对与 `base` 档，见「十二、模型档位与下载源选择」） | `mirror` |
+| `MT_MODEL_MIRROR_URL` | 模型镜像地址（仅 `MT_MODEL_DOWNLOAD_SOURCE=mirror` 时生效） | `http://183.136.206.212:8787` |
+| `MT_DOWNLOAD_PROXY` | 模型/清单下载代理（http/https/socks/socks5 等，也支持把 `s5:` 自动纠正为 `socks5:`）；内网机出网下载模型时设置，如 `socks5://192.168.30.42:11111` | 未设置（直连） |
 | `MT_API_TOKEN` | API 鉴权 token（设置后需 Bearer 鉴权） | 未设置 |
+| `MT_LOG_DIR` | 日志文件目录（配合 `MT_LOG_TO_FILE=true` 生效） | `$HOME/logs` |
+| `MT_LOG_TO_FILE` | 是否将日志写入文件（输出到 `MT_LOG_DIR`） | `false` |
+| `MT_LOG_CONSOLE` | 是否将日志输出到控制台 | `true` |
+| `MT_LOG_REQUESTS` | 是否在日志中记录每次请求的明细 | `false` |
+| `MT_CHECK_UPDATE` | 启动时是否检查版本更新 | `true` |
+| `MT_CACHE_SIZE` | 翻译结果缓存条目数（相同输入命中缓存直接返回，提升重复翻译性能） | `1000` |
+| `MT_WORKER_IDLE_TIMEOUT` | 翻译 worker 空闲多久后自动退出（秒），释放内存；有请求时重新拉起 | `60` |
+| `MT_WORKERS_PER_LANGUAGE` | 每个语言对并发 worker 数（提高并发吞吐，但更占内存） | `1` |
+| `MT_MAX_SENTENCE_LENGTH` | 单句最大长度（字符数），超过会被截断 | `512` |
+| `MT_FULLWIDTH_ZH_PUNCTUATION` | 是否将中文标点转为全角（符合中文排版习惯） | `true` |
 
 > 优先级：命令行参数 > 环境变量 > 配置文件 > 默认值。
 
@@ -161,8 +172,8 @@ docker compose -f docker/docker-compose.yaml logs -f
 ## 八、验证
 
 ```bash
-# 健康检查
-curl http://localhost:8989/api/health
+# 健康检查（实际路由为 GET /health，无 /api 前缀）
+curl http://localhost:8989/health
 
 # 模型列表
 curl http://localhost:8989/api/models
@@ -302,4 +313,70 @@ docker compose -f docker-compose.yaml up -d
 - **OCR 缓存已齐全**：`models/ocr-cache/`（预置 `V6_SMALL_MODEL` 预设三件套：`PP-OCRv6_small_det.ort`、`PP-OCRv6_small_rec.ort`、`ppocrv6_dict.txt`）必须随包带走，否则离线/无网时 OCR 初始化会因缓存缺失而尝试联网下载失败；`models/ocr/` 本地模型为可选项（有则优先）。
 - **离线模式需 records.json**：`MT_OFFLINE=true` 时必须预置 `config/records.json`；在线模式则每次启动联网拉最新清单（很小）。
 - 若目标机已有镜像仓库访问能力，可只传 `models/` + `config/` + `docker-compose.yaml`，镜像从仓库 `pull` 即可。
+
+---
+
+## 十二、模型档位与下载源选择（自行决定）
+
+MTranServer 的翻译模型来自 Firefox Translations（bergamot 本地 NMT）。每个语言对通常有多个**架构档位**可选，且模型可从**不同下载源**获取。下面把所有可选项讲清楚，由你按需组合。
+
+### 12.1 档位：base-memory / base / tiny
+
+代码（`src/models/records.ts` 的 `getPreferredArchitecture()`）默认优先顺序为 `['base-memory', 'base', 'tiny']`，即**默认选 `base-memory`**。三档含义：
+
+| 档位 | 质量（comet22，语义指标） | 体积 | 说明 |
+|------|--------------------------|------|------|
+| `base-memory` | 基准（与 base 几乎持平） | 较小 | **默认档**。为内存受限场景优化的低内存变体，浏览器/本地部署首选 |
+| `base` | 与 base-memory 基本持平（flores 实测中位差 ≈ 0） | 比 base-memory 大 ~36% | 全量权重，质量未明显优于 base-memory，但更占内存/磁盘 |
+| `tiny` | 明显偏低 | 最小 | 最快最小，仅低资源环境才考虑 |
+
+> **实测结论（基于官方 `models.json` 的 flores200-plus 指标）**：`base` 与 `base-memory` 的 **comet22 语义质量几乎一致（中位差 ≈ 0.0001，可忽略）**，`base` 仅在 spbleu 上小幅领先，但体积大 36%。因此**不建议为追求质量盲目切到 `base`**——收益极小、代价不小。默认的 `base-memory` 已是官方 release 首选档。
+>
+> 只有在特定语言对确实需要 `base`（如该对没有 base-memory 档）时，才需要显式指定 `architecture: 'base'`。
+
+**如何选档**：在 Web UI 的模型管理器里下载某语言对时，可手动选择架构档位；也可通过下载 API 显式指定：
+```bash
+curl -X POST http://localhost:8989/api/models/download \
+  -H "Content-Type: application/json" \
+  -d '{"from":"zh","to":"en","architecture":"base"}'   # 不指定则走默认 base-memory
+```
+
+### 12.2 下载源：mirror（默认） vs official
+
+| 源 | 环境变量 | 覆盖范围 | 适用 |
+|----|----------|----------|------|
+| 镜像站（默认） | `MT_MODEL_DOWNLOAD_SOURCE=mirror` + `MT_MODEL_MIRROR_URL=http://183.136.206.212:8787` | 我们内部镜像站，**不含中文（zh）语言对**，多数为 `base-memory` 档 | 内网、翻非中文小语种 |
+| 官方源 | `MT_MODEL_DOWNLOAD_SOURCE=official` | Firefox 官方源（Mozilla CDN），**含中文语言对（zh-en / en-zh）及 base 档** | 需要中文翻译、且服务器能联网到官方源时 |
+
+> **重要**：你当前默认配置走 `mirror` 源，而该镜像站**没有 zh 语言对**。如果你在做**中↔英翻译却效果"凑合"甚至翻不动**，根因很可能是**没用上正确的中文模型**——应切到 `official` 源下载中文对。
+
+**切换到官方源**（compose `environment` 中改/加）：
+```yaml
+environment:
+  - MT_MODEL_DOWNLOAD_SOURCE=official
+  # MT_MODEL_MIRROR_URL 在 official 源下不生效，可保留或删除
+```
+
+### 12.3 下载代理 MT_DOWNLOAD_PROXY
+
+无论 mirror 还是 official，模型/清单下载都支持走代理（代码见 `src/core/factory.ts`：proxy 非空即用 `proxy-agent` 走代理）：
+
+```yaml
+environment:
+  - MT_DOWNLOAD_PROXY=socks5://192.168.30.42:11111   # 支持 http/https/socks/socks5；s5: 会自动纠正为 socks5:
+```
+
+- 代理仅作用于**模型/清单下载**，不影响服务正常流量。
+- 若服务器本身能直连目标源，可不设此变量（直连）。
+
+### 12.4 推荐组合（按场景）
+
+| 场景 | 配置 |
+|------|------|
+| 内网、翻非中文、源可达 | `mirror` + 默认 `base-memory`（不改） |
+| **需要中文翻译** | `official` 源（含 zh-en/en-zh），按需 `architecture: base` 或保持默认 |
+| 服务器需经代理才能联网下载 | 上述任一源 + `MT_DOWNLOAD_PROXY=...` |
+| 彻底断网 | 见「十一、离线迁移」四件套预置，离线模式不走任何下载源 |
+
+> 注意：切换下载源后，旧源已下载的模型仍保留在 `./docker/models`，不影响；新语言对会按新源下载。中文模型首次下载体积较大（zh 单个语言对解压后约 60–90MB），首次翻译会变慢，属正常。
 
