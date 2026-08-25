@@ -3,6 +3,18 @@
 > 从 commit `1336ab64`（引入 OCR 图片翻译、模型管理器、Linux 部署文档）起，本仓库相对上游 MTranServer 进入独立的 v5.x 版本线。
 > 以下为 v5.0.0 之后的演进（按主题归并）。
 
+## v5.1.0
+
+- 新增「模型自动更新」后台调度器：服务监听端口成功后才挂起（不影响启动速度），按配置周期性刷新 Mozilla 模型库清单（`refreshRecords`）并自动下载内置前 10 常用语言（zh,en,ja,ko,ru,fr,de,es,pt,ar）与英语的双向配对模型；已装模型经哈希校验自动跳过，几乎零带宽开销
+- 超时保护：单次自动更新受 30 分钟 `AbortController` 硬超时约束，超时即中止本轮、正常排期下次，绝不长期挂起主进程；`running` 重入保护防止重叠执行
+- 配置（环境变量 / 命令行 / server.json 三源一致，默认开启）：
+  - `MT_AUTO_UPDATE_ENABLED` 默认 `true`（默认开启）
+  - `MT_AUTO_UPDATE_HOUR` 默认 `3`（基准整点小时 0–23，作为每天首个执行点，固定该整点第 12 分钟）
+  - `MT_AUTO_UPDATE_TIMES_PER_DAY` 默认 `1`（每天检查次数 1–24，相邻间隔≥1 小时，全天均匀分摊执行时刻；如 hour=3,times=4 → 03:12/09:12/15:12/21:12）
+  - `MT_AUTO_UPDATE_LANGUAGES` 默认内置前 10 语言（逗号分隔可覆盖）
+- 互斥与隔离：与离线模式互斥（`MT_OFFLINE=true` 静默跳过）；单语言/单方向下载失败仅记日志、不中断其他语言与其他周期；递归 `setTimeout` 调度避免间隔漂移，`stop()` 内清理定时器
+- 文件：`src/config/index.ts`（配置项+默认值）、`src/models/auto-update.ts`（新建调度器）、`src/server/index.ts`（listen 启动 / stop 清理）；文档 `docs/model-auto-update.md`、`docker/README.md`、`docker/docker-compose.yaml` 同步新增配置说明（前端无改动，开关由环境变量控制）
+
 ## v5.0.27
 
 - 日志系统：修复「debug 模式反而日志更少」问题。根因有两点：(1) `getLogLevel()` 惰性缓存首次读取结果，`startServer()` 早期调用 `logger.info` 把级别锁死，且从未显式初始化——已在 `startServer()` 的 `getConfig()` 之后立即 `logger.setLogLevel(config.logLevel)` 固化真实级别；(2) `core/factory.ts`、`core/engine.ts`、`server/languages.ts`、`main.ts` 多处裸 `console.*` 绕过 logger 不受级别控制，造成「受控日志被过滤、裸 console 却总打印」的割裂观感——已全部收敛为 `logger.warn/error/info/important`，统一受级别与 `logToFile` 约束（`logger/index.ts` 内部 4 处 console 为自身实现，正确保留）。级别过滤（`shouldLog`）优先于 `logConsole` 控制台开关，二者已解耦；帮助信息改用 `logger.important`（force，强制可见）
