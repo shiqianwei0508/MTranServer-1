@@ -61,6 +61,25 @@ zh, en, ja, ko, ru, fr, de, es, pt, ar
   - `Aborted by timeout` / `Failed to update …`：异常（已隔离，不影响服务）
 - 服务关闭（`stop()`）时会清理定时器，不会在服务退出后仍运行。
 
+## 手动触发接口
+
+除定时自动执行外，还提供接口**立即触发一次**自动更新流程（复用与定时任务完全相同的逻辑：刷新清单 + 下载前 10 语言模型、超时保护、失败隔离、offline 互斥）。
+
+```
+POST /api/models/auto-update
+Authorization: Bearer <MT_API_TOKEN>   # 若启用了 api_token 鉴权
+```
+
+- 成功受理返回 `202 Accepted`：
+  ```json
+  { "triggered": true, "message": "Auto update triggered; check server logs ([auto-update]) for progress." }
+  ```
+- 已在更新中（返回 `200`）：`{ "triggered": false, "reason": "already-running", ... }`
+- 自动更新被禁用（`MT_AUTO_UPDATE_ENABLED=false`，返回 `200`）：`{ "triggered": false, "reason": "disabled", ... }`
+- 服务关闭中（返回 `200`）：`{ "triggered": false, "reason": "scheduler-stopped", ... }`
+
+该接口**不阻塞请求**：更新在后台异步执行，进度与结果通过日志 `[auto-update]` 查看（见上文"运维注意"）。手动触发**不影响**现有定时器调度，下次定时任务仍按原节奏执行。
+
 ## 相关代码
 
 - `src/config/index.ts`：4 个配置项与默认前 10 语言常量。

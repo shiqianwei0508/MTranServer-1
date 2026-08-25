@@ -192,3 +192,58 @@ export function stopAutoUpdateScheduler(): void {
   }
   logger.info('[auto-update] Scheduler stopped');
 }
+
+export interface ManualTriggerResult {
+  triggered: boolean;
+  reason?: 'already-running' | 'scheduler-stopped' | 'disabled';
+  message: string;
+}
+
+// 手动触发一次自动更新（供 /api/models/auto-update 接口调用）。
+// 复用与定时任务完全相同的逻辑（refreshRecords + 前10语言下载、超时保护、失败隔离）。
+// 不阻塞调用方：若当前已有更新在跑则直接返回未触发；否则异步执行并立即返回已触发，
+// 实际结果由后台日志（[auto-update]）体现。不影响现有定时器调度。
+export function triggerAutoUpdateNow(): ManualTriggerResult {
+  if (stopped) {
+    return {
+      triggered: false,
+      reason: 'scheduler-stopped',
+      message: 'Scheduler is stopped (server shutting down); cannot trigger manual update.',
+    };
+  }
+
+  const config = getConfig();
+  if (!config.autoUpdateEnabled) {
+    return {
+      triggered: false,
+      reason: 'disabled',
+      message: 'Auto update is disabled by configuration (MT_AUTO_UPDATE_ENABLED=false).',
+    };
+  }
+
+  if (running) {
+    return {
+      triggered: false,
+      reason: 'already-running',
+      message: 'An auto update is already in progress; please wait for it to finish.',
+    };
+  }
+
+  // 异步执行，不 await，避免 HTTP 请求被长时间下载阻塞。
+  running = true;
+  logger.info('[auto-update] Manual trigger requested');
+  void (async () => {
+    try {
+      await runAutoUpdateOnce();
+    } catch {
+      // runAutoUpdateOnce 内部已兜底，这里不再抛出。
+    } finally {
+      running = false;
+    }
+  })();
+
+  return {
+    triggered: true,
+    message: 'Auto update triggered; check server logs ([auto-update]) for progress.',
+  };
+}

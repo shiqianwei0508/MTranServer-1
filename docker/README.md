@@ -347,6 +347,13 @@ curl -X POST http://localhost:8989/api/models/download \
   -d '{"from":"zh","to":"en","architecture":"base"}'   # 不指定则走默认 base-memory
 ```
 
+**立即触发一次自动更新**（手动触发后台刷新清单 + 下载前 10 语言模型，与定时任务逻辑相同；返回 `202` 即受理，进度看日志 `[auto-update]`）：
+```bash
+curl -X POST http://localhost:8989/api/models/auto-update \
+  -H "Authorization: Bearer <MT_API_TOKEN>"   # 若启用 MT_API_TOKEN 鉴权
+```
+> 若已在更新中 / 已禁用 / 服务关闭中，返回 `200` 并带 `triggered:false` 与对应 `reason`，均不影响现有定时调度。
+
 ### 12.2 下载源：mirror（默认） vs official
 
 | 源 | 环境变量 | 覆盖范围 | 适用 |

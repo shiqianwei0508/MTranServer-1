@@ -27,6 +27,7 @@ import {
   startModelDownload,
   updateModelDownloadSettings,
 } from '@/models/manager.js';
+import { triggerAutoUpdateNow } from '@/models/auto-update.js';
 
 interface ModelDownloadRequest {
   from: string;
@@ -264,6 +265,18 @@ export class ModelController extends Controller {
   @SuccessResponse('200', 'Success')
   public async refresh(): Promise<ModelCatalog> {
     return refreshModelRecords();
+  }
+
+  @Post('auto-update')
+  @SuccessResponse('202', 'Accepted')
+  public async autoUpdate(): Promise<{
+    triggered: boolean;
+    reason?: 'already-running' | 'scheduler-stopped' | 'disabled';
+    message: string;
+  }> {
+    const result = triggerAutoUpdateNow();
+    this.setStatus(result.triggered ? 202 : 200);
+    return result;
   }
 
   @Delete('{from}/{to}')
