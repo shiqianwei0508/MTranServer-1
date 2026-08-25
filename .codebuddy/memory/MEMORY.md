@@ -15,6 +15,12 @@
 - 绝对禁止用 PowerShell / cmd / sed 读写或替换文件内容（曾因错误编码导致中文乱码、把反斜杠误写入，改废用户脚本）。
 - 唯一允许的 shell 用途是 git 版本控制命令（`git checkout/status/log` 等），且路径切换用 `Push-Location`/`Set-Location`。
 
+## 生产部署端点（2026-08-25）
+- 翻译 API 根地址：`https://freedotrans.gbim.vip/`
+- API Token（Bearer）：`USfcMh4OUQk3h93iekOHv3uK`
+- 用途：线上生产环境测试（如模型自动更新接口探活）。仅用于测试调用，不写入代码/文档。
+- 注：之前会话中提到的 `192.168.30.42:11111`（socks5 代理）、`183.136.206.212:8787`（模型镜像站）非部署域名，勿混淆。
+
 ## 代理约定（2026-08-24）
 - 联网抓取（web_fetch/直连）失败时，自动使用代理 `socks5://192.168.30.42:11111`（用户原话写的是 `socket5://`，实际使用为 `socks5://`）。
 - 适用场景：查证官方文档、下载模型/字典、GitHub/HuggingFace 等直连被拒时。

@@ -66,7 +66,7 @@ zh, en, ja, ko, ru, fr, de, es, pt, ar
 除定时自动执行外，还提供接口**立即触发一次**自动更新流程（复用与定时任务完全相同的逻辑：刷新清单 + 下载前 10 语言模型、超时保护、失败隔离、offline 互斥）。
 
 ```
-POST /api/models/auto-update
+POST /models/auto-update
 Authorization: Bearer <MT_API_TOKEN>   # 若启用了 api_token 鉴权
 ```
 

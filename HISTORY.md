@@ -5,7 +5,7 @@
 
 ## v5.1.1
 
-- 新增手动触发自动更新接口 `POST /api/models/auto-update`：立即在后台执行一次自动更新流程（刷新清单 + 下载前 10 语言模型），复用与定时任务完全相同的逻辑（30 分钟超时保护、失败隔离、offline 互斥、重入保护）；返回 `202 Accepted` 表示已受理，已在更新中/已禁用/服务关闭中返回 `200` 并带 `triggered:false` 与对应 `reason`；不阻塞请求、不影响现有定时调度
+- 新增手动触发自动更新接口 `POST /models/auto-update`：立即在后台执行一次自动更新流程（刷新清单 + 下载前 10 语言模型），复用与定时任务完全相同的逻辑（30 分钟超时保护、失败隔离、offline 互斥、重入保护）；返回 `202 Accepted` 表示已受理，已在更新中/已禁用/服务关闭中返回 `200` 并带 `triggered:false` 与对应 `reason`；不阻塞请求、不影响现有定时调度
 - 文件：`src/models/auto-update.ts`（导出 `triggerAutoUpdateNow()`）、`src/controllers/model.controller.ts`（新增接口）；文档 `docs/model-auto-update.md`、`docker/README.md` 补充手动触发说明与 curl 示例；前端 `ModelManagerDialog` 未加按钮（按需求仅后端接口）
 
 ## v5.1.0
