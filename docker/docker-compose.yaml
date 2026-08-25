@@ -40,6 +40,11 @@ services:
       - MT_MODEL_MIRROR_URL=http://183.136.206.212:8787  # 模型镜像地址
       # 如需 API 鉴权，取消下行注释并填入实际 token:
       # - MT_API_TOKEN=your_secret_token_here
+      # 模型自动更新（默认开启：后台定时刷新清单并下载前10语言模型；30分钟超时保护，离线模式自动跳过）
+      # - MT_AUTO_UPDATE_ENABLED=true
+      # - MT_AUTO_UPDATE_HOUR=3
+      # - MT_AUTO_UPDATE_TIMES_PER_DAY=1
+      # - MT_AUTO_UPDATE_LANGUAGES=zh,en,ja,ko,ru,fr,de,es,pt,ar
     volumes:
       # 翻译模型持久化（强烈建议，避免重建容器后重新下载）:
       - ./docker/models:/app/models

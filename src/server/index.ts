@@ -14,6 +14,7 @@ import swaggerDocument from '@/generated/swagger.json';
 import { uiStatic } from '@/middleware/ui.js';
 import { swaggerStatic } from '@/middleware/swagger.js';
 import { checkForUpdate } from '@/utils/update-checker.js';
+import { startAutoUpdateScheduler, stopAutoUpdateScheduler } from '@/models/auto-update.js';
 import { VERSION } from '@/version';
 import { registerOcrRoutes } from './ocr-routes.js';
 
@@ -198,10 +199,14 @@ export async function startServer({ handleSignals = true } = {}) {
     if (config.checkUpdate) {
       checkForUpdate();
     }
+
+    // 模型自动更新调度器：仅在 listen 成功后才挂起，绝不阻塞/拖慢启动关键路径。
+    startAutoUpdateScheduler();
   });
 
   const stop = async () => {
     logger.info('Shutting down server...');
+    stopAutoUpdateScheduler();
     cleanupAllEngines();
     await cleanupOcrService();
     await new Promise<void>((resolve) => server.close(() => resolve()));

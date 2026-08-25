@@ -25,6 +25,10 @@ export interface Config {
   modelDownloadSource: 'mirror' | 'official';
   modelMirrorUrl: string;
   downloadProxy: string;
+  autoUpdateEnabled: boolean;
+  autoUpdateHour: number;
+  autoUpdateTimesPerDay: number;
+  autoUpdateLanguages: string[];
 }
 
 let globalConfig: Config | null = null;
@@ -111,6 +115,17 @@ function getModelDownloadSource(value: string): 'mirror' | 'official' {
   return value === 'official' ? 'official' : 'mirror';
 }
 
+const DEFAULT_AUTO_UPDATE_LANGUAGES = ['zh', 'en', 'ja', 'ko', 'ru', 'fr', 'de', 'es', 'pt', 'ar'];
+
+function parseLanguageList(value: string | undefined, fallback: string[]): string[] {
+  if (!value) return fallback;
+  const parts = value
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter((part) => part.length > 0);
+  return parts.length > 0 ? parts : fallback;
+}
+
 export function getConfig(): Config {
   if (globalConfig !== null) {
     return globalConfig;
@@ -161,6 +176,25 @@ export function getConfig(): Config {
       fileConfig.modelMirrorUrl || 'http://183.136.206.212:8787'
     ),
     downloadProxy: getString('--download-proxy', 'MT_DOWNLOAD_PROXY', fileConfig.downloadProxy || ''),
+
+    autoUpdateEnabled: getBool(
+      '--auto-update',
+      'MT_AUTO_UPDATE_ENABLED',
+      fileConfig.autoUpdateEnabled ?? true
+    ),
+    autoUpdateHour: Math.min(
+      23,
+      Math.max(0, getInt('--auto-update-hour', 'MT_AUTO_UPDATE_HOUR', fileConfig.autoUpdateHour ?? 3))
+    ),
+    autoUpdateTimesPerDay: Math.min(
+      24,
+      Math.max(1, getInt('--auto-update-times', 'MT_AUTO_UPDATE_TIMES_PER_DAY', fileConfig.autoUpdateTimesPerDay ?? 1))
+    ),
+    autoUpdateLanguages: parseLanguageList(
+      fileConfig.autoUpdateLanguages?.join(',') ||
+        getString('--auto-update-languages', 'MT_AUTO_UPDATE_LANGUAGES', ''),
+      DEFAULT_AUTO_UPDATE_LANGUAGES
+    ),
   };
 
   return globalConfig;

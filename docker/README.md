@@ -139,6 +139,12 @@ docker compose -f docker/docker-compose.yaml logs -f
 | `MT_WORKERS_PER_LANGUAGE` | 每个语言对并发 worker 数（提高并发吞吐，但更占内存） | `1` |
 | `MT_MAX_SENTENCE_LENGTH` | 单句最大长度（字符数），超过会被截断 | `512` |
 | `MT_FULLWIDTH_ZH_PUNCTUATION` | 是否将中文标点转为全角（符合中文排版习惯） | `true` |
+| `MT_AUTO_UPDATE_ENABLED` | 是否启用模型自动更新调度器（后台按配置定时刷新清单并下载前 10 常用语言模型） | `true` |
+| `MT_AUTO_UPDATE_HOUR` | 自动更新基准整点小时（0–23），作为每天首个执行点（固定该整点第 12 分钟） | `3` |
+| `MT_AUTO_UPDATE_TIMES_PER_DAY` | 每天自动更新检查次数（1–24，相邻间隔不小于 1 小时，全天均匀分摊） | `1` |
+| `MT_AUTO_UPDATE_LANGUAGES` | 自动更新覆盖的语言代码（逗号分隔），覆盖内置前 10 默认（zh,en,ja,ko,ru,fr,de,es,pt,ar） | 内置默认 |
+
+> **模型自动更新说明**：调度器在端口监听成功后才启动（**不影响启动速度**），默认开启。它周期性刷新 Mozilla 模型清单并自动下载前 10 常用语言模型；已安装模型经哈希校验自动跳过，几乎零带宽开销。单次更新受 30 分钟超时保护，超时即中止本轮、正常排期下次，**绝不卡死主进程**。与离线模式互斥：`MT_OFFLINE=true` 时自动更新静默跳过。关闭/调参通过上方 4 个 `MT_AUTO_UPDATE_*` 变量控制，无需改动前端。日志关键字前缀 `[auto-update]`。详见仓库 `docs/model-auto-update.md`。
 
 > 优先级：命令行参数 > 环境变量 > 配置文件 > 默认值。
 
